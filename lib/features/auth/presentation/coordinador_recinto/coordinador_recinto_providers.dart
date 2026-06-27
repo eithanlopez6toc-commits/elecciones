@@ -41,15 +41,12 @@ final veedoresDeRecintoProvider =
     FutureProvider.family<List<Usuario>, int>((ref, recintoId) async {
   final supabase = ref.watch(supabaseClientProvider);
   // Trae usuarios con rol veedor que tienen mesas asignadas en este recinto
-  final res = await supabase
-      .from('veedor_mesas')
-      .select('''
+  final res = await supabase.from('veedor_mesas').select('''
         usuario_id,
         mesa_id,
         usuarios!inner(*),
         mesas_jrv!inner(recinto_id)
-      ''')
-      .eq('mesas_jrv.recinto_id', recintoId);
+      ''').eq('mesas_jrv.recinto_id', recintoId);
 
   final vistos = <String>{};
   final lista = <Usuario>[];
@@ -78,9 +75,10 @@ class ResumenRecinto {
     required this.mesasConActaPrefecto,
   });
 
-  int get mesasCompletas =>
-      [mesasConActaAlcalde, mesasConActaPrefecto].reduce((a, b) => a < b ? a : b);
-  int get actasPendientes => (totalMesas * 2) - mesasConActaAlcalde - mesasConActaPrefecto;
+  int get mesasCompletas => [mesasConActaAlcalde, mesasConActaPrefecto]
+      .reduce((a, b) => a < b ? a : b);
+  int get actasPendientes =>
+      (totalMesas * 2) - mesasConActaAlcalde - mesasConActaPrefecto;
 }
 
 final resumenRecintoProvider =
@@ -114,9 +112,8 @@ final resumenRecintoProvider =
 });
 
 // ─── Crear mesa ───────────────────────────────────────────────────────────────
-final crearMesaProvider =
-    Provider<Future<void> Function(int recintoId, int numero, GeneroMesa genero)>(
-        (ref) {
+final crearMesaProvider = Provider<
+    Future<void> Function(int recintoId, int numero, GeneroMesa genero)>((ref) {
   return (recintoId, numero, genero) async {
     final supabase = ref.read(supabaseClientProvider);
     await supabase.from(SupabaseConstants.mesasJrvTable).insert({
@@ -129,17 +126,17 @@ final crearMesaProvider =
 
 // ─── Crear cuenta de veedor ───────────────────────────────────────────────────
 // Llama a una Edge Function de Supabase para crear el usuario en auth + perfil
-final crearVeedorProvider =
-    Provider<Future<void> Function(String cedula, String nombres, String apellidos, String telefono, int mesaId)>(
-        (ref) {
-  return (cedula, nombres, apellidos, telefono, mesaId) async {
+final crearVeedorProvider = Provider<
+    Future<void> Function(String cedula, String nombres, String apellidos,
+        String telefono, String correo, int mesaId)>((ref) {
+  return (cedula, nombres, apellidos, telefono, correo, mesaId) async {
     final supabase = ref.read(supabaseClientProvider);
-    // Invoca la Edge Function 'crear-usuario' (ver nota en el SQL)
     await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
       'nombres': nombres,
       'apellidos': apellidos,
       'telefono': telefono,
+      'correo': correo,
       'rol': 'veedor',
       'mesa_id': mesaId,
     });
@@ -152,10 +149,7 @@ final reasignarVeedorProvider =
   return (usuarioId, mesaId) async {
     final supabase = ref.read(supabaseClientProvider);
     // Elimina asignación anterior y crea la nueva
-    await supabase
-        .from('veedor_mesas')
-        .delete()
-        .eq('usuario_id', usuarioId);
+    await supabase.from('veedor_mesas').delete().eq('usuario_id', usuarioId);
     await supabase.from('veedor_mesas').insert({
       'usuario_id': usuarioId,
       'mesa_id': mesaId,

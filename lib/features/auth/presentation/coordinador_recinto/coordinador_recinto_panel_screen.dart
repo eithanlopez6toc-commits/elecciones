@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/cedula_validator.dart';
 import '../../domain/entities/acta.dart';
 import '../../domain/entities/mesa_jrv.dart';
 import '../../domain/entities/organizacion_politica.dart';
@@ -21,7 +22,6 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // El recinto del coordinador viene en recintoId del perfil
     final recintoId = usuario.recintoId;
     if (recintoId == null) {
       return const Scaffold(
@@ -59,14 +59,16 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add_road_outlined, size: 20),
             tooltip: 'Agregar mesa',
-            onPressed: () => _mostrarDialogoCrearMesa(context, ref, recintoId),
+            onPressed: () =>
+                _mostrarDialogoCrearMesa(context, ref, recintoId),
           ),
           IconButton(
             icon: const Icon(Icons.logout_outlined, size: 20),
             onPressed: () async {
               await ref.read(loginControllerProvider.notifier).logout();
-              if (context.mounted)
+              if (context.mounted) {
                 Navigator.of(context).pushReplacementNamed('/');
+              }
             },
           ),
         ],
@@ -80,17 +82,15 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(12),
           children: [
-            // Banner resumen
             resumenAsync.when(
               loading: () => const _BannerCargando(),
               error: (e, _) => _BannerError(mensaje: e.toString()),
               data: (resumen) => _BannerResumen(resumen: resumen),
             ),
             const SizedBox(height: 12),
-
-            // Lista de mesas
             mesasAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text('Error: $e',
                     style: const TextStyle(color: Colors.red)),
@@ -119,7 +119,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
     );
   }
 
-  // ── Dialogo crear mesa ──────────────────────────────────────────────────────
+  // ── Diálogo crear mesa ──────────────────────────────────────────────────────
   void _mostrarDialogoCrearMesa(
       BuildContext context, WidgetRef ref, int recintoId) {
     final ctrlNumero = TextEditingController();
@@ -154,8 +154,8 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
               ...GeneroMesa.values.map((g) => RadioListTile<GeneroMesa>(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title:
-                        Text(g.dbValue, style: const TextStyle(fontSize: 13)),
+                    title: Text(g.dbValue,
+                        style: const TextStyle(fontSize: 13)),
                     value: g,
                     groupValue: generoSeleccionado,
                     onChanged: (v) => setS(() => generoSeleccionado = v!),
@@ -180,11 +180,9 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                   if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                          content: Text('Error: $e'),
-                          backgroundColor: Colors.red),
-                    );
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red));
                   }
                 }
               },
@@ -196,14 +194,16 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
     );
   }
 
-  // ── Dialogo crear veedor ────────────────────────────────────────────────────
+  // ── Diálogo crear veedor (con validación completa) ─────────────────────────
   void _mostrarDialogoCrearVeedor(
       BuildContext context, WidgetRef ref, int recintoId) {
     final ctrlCedula = TextEditingController();
     final ctrlNombres = TextEditingController();
     final ctrlApellidos = TextEditingController();
     final ctrlTelefono = TextEditingController();
+    final ctrlCorreo = TextEditingController();
     int? mesaIdSeleccionada;
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -214,43 +214,114 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
             title: const Text('Crear veedor',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _CampoTexto(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Cédula con validación ecuatoriana ──
+                    _CampoForm(
                       ctrl: ctrlCedula,
-                      label: 'Cédula',
+                      label: 'Cédula de identidad',
                       digitsOnly: true,
-                      maxLength: 10),
-                  const SizedBox(height: 10),
-                  _CampoTexto(ctrl: ctrlNombres, label: 'Nombres'),
-                  const SizedBox(height: 10),
-                  _CampoTexto(ctrl: ctrlApellidos, label: 'Apellidos'),
-                  const SizedBox(height: 10),
-                  _CampoTexto(
-                      ctrl: ctrlTelefono, label: 'Teléfono', digitsOnly: true),
-                  const SizedBox(height: 10),
-                  mesasAsync.when(
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Error cargando mesas: $e'),
-                    data: (mesas) => DropdownButtonFormField<int>(
-                      value: mesaIdSeleccionada,
-                      hint: const Text('Asignar a mesa'),
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: mesas
-                          .map((m) => DropdownMenuItem(
-                                value: m.id,
-                                child: Text(
-                                    'Mesa ${m.numeroMesa} — ${m.genero.dbValue}'),
-                              ))
-                          .toList(),
-                      onChanged: (v) => setS(() => mesaIdSeleccionada = v),
+                      maxLength: 10,
+                      validator: CedulaValidator.validate,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlNombres,
+                      label: 'Nombres completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los nombres son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlApellidos,
+                      label: 'Apellidos completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los apellidos son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlTelefono,
+                      label: 'Teléfono de contacto',
+                      digitsOnly: true,
+                      maxLength: 10,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Obligatorio';
+                        if (v.length < 9) return 'Teléfono inválido';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Correo electrónico ──
+                    _CampoForm(
+                      ctrl: ctrlCorreo,
+                      label: 'Correo electrónico',
+                      keyboard: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'El correo es obligatorio';
+                        }
+                        final emailRegex =
+                            RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+                        if (!emailRegex.hasMatch(v.trim())) {
+                          return 'Correo electrónico inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Selector de mesa ──
+                    mesasAsync.when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, _) => Text('Error cargando mesas: $e'),
+                      data: (mesas) => DropdownButtonFormField<int>(
+                        value: mesaIdSeleccionada,
+                        hint: const Text('Asignar a mesa'),
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), isDense: true),
+                        validator: (v) =>
+                            v == null ? 'Selecciona una mesa' : null,
+                        items: mesas
+                            .map((m) => DropdownMenuItem(
+                                  value: m.id,
+                                  child: Text(
+                                      'Mesa ${m.numeroMesa} — ${m.genero.dbValue}'),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setS(() => mesaIdSeleccionada = v),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Aviso de correo de confirmación
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.mail_outline,
+                              size: 16, color: Color(0xFF2E7D32)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Se enviará un correo de confirmación para activar la cuenta.',
+                              style: TextStyle(
+                                  fontSize: 11, color: Color(0xFF2E7D32)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -260,38 +331,37 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
               FilledButton(
                 style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF1B5E20)),
-                onPressed: mesaIdSeleccionada == null
-                    ? null
-                    : () async {
-                        try {
-                          await ref.read(crearVeedorProvider)(
-                            ctrlCedula.text.trim(),
-                            ctrlNombres.text.trim(),
-                            ctrlApellidos.text.trim(),
-                            ctrlTelefono.text.trim(),
-                            mesaIdSeleccionada!,
-                          );
-                          ref.invalidate(veedoresDeRecintoProvider(recintoId));
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(
-                                content: Text('Veedor creado correctamente'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                  content: Text('Error: $e'),
-                                  backgroundColor: Colors.red),
-                            );
-                          }
-                        }
-                      },
-                child: const Text('Crear'),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  try {
+                    await ref.read(crearVeedorProvider)(
+                      ctrlCedula.text.trim(),
+                      ctrlNombres.text.trim(),
+                      ctrlApellidos.text.trim(),
+                      ctrlTelefono.text.trim(),
+                      ctrlCorreo.text.trim(), // ← NUEVO
+                      mesaIdSeleccionada!,
+                    );
+                    ref.invalidate(veedoresDeRecintoProvider(recintoId));
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Veedor creado · Se envió correo de confirmación'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red));
+                    }
+                  }
+                },
+                child: const Text('Crear y enviar correo'),
               ),
             ],
           );
@@ -301,9 +371,9 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 // Banner resumen
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 class _BannerResumen extends StatelessWidget {
   final ResumenRecinto resumen;
   const _BannerResumen({required this.resumen});
@@ -361,7 +431,8 @@ class _Stat extends StatelessWidget {
                 )),
             Text(etiqueta,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                style:
+                    const TextStyle(color: Colors.white70, fontSize: 10)),
           ],
         ),
       );
@@ -386,8 +457,8 @@ class _BannerCargando extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Center(
-            child:
-                CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+            child: CircularProgressIndicator(
+                color: Colors.white, strokeWidth: 2)),
       );
 }
 
@@ -401,18 +472,20 @@ class _BannerError extends StatelessWidget {
           color: Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(mensaje, style: TextStyle(color: Colors.red.shade700)),
+        child:
+            Text(mensaje, style: TextStyle(color: Colors.red.shade700)),
       );
 }
 
-// ─────────────────────────────────────────
-// Tarjeta de mesa con sus actas
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// Tarjeta de mesa
+// ═════════════════════════════════════════════════════════════════════════════
 class _TarjetaMesaCoordinador extends ConsumerWidget {
   final MesaJrv mesa;
   final Usuario usuario;
 
-  const _TarjetaMesaCoordinador({required this.mesa, required this.usuario});
+  const _TarjetaMesaCoordinador(
+      {required this.mesa, required this.usuario});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -433,12 +506,13 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: const BoxDecoration(
               color: Color(0xFFE8F5E9),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
@@ -449,13 +523,11 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                   child: Text(
                     'Mesa ${mesa.numeroMesa} — ${mesa.genero.dbValue}',
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1B5E20),
-                    ),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1B5E20)),
                   ),
                 ),
-                // Botón reasignar veedor
                 GestureDetector(
                   onTap: () => _mostrarReasignar(context, ref, mesa),
                   child: const Icon(Icons.swap_horiz,
@@ -464,17 +536,17 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
               ],
             ),
           ),
-
-          // Filas de actas
           actasAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(12),
               child: Text('Error: $e',
-                  style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  style: const TextStyle(
+                      color: Colors.red, fontSize: 12)),
             ),
             data: (actas) {
               final actaAlcalde = actas
@@ -493,7 +565,9 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                         context, ref, Dignidad.alcalde, actaAlcalde),
                   ),
                   Divider(
-                      height: 1, thickness: 0.5, color: Colors.grey.shade200),
+                      height: 1,
+                      thickness: 0.5,
+                      color: Colors.grey.shade200),
                   _FilaActaCoordinador(
                     etiqueta: 'Acta de Prefecto',
                     acta: actaPrefecto,
@@ -511,7 +585,8 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
 
   Future<void> _irAFormulario(BuildContext context, WidgetRef ref,
       Dignidad dignidad, Acta? actaExistente) async {
-    final orgsAsync = ref.read(organizacionesPorDignidadProvider(dignidad));
+    final orgsAsync =
+        ref.read(organizacionesPorDignidadProvider(dignidad));
     final orgs = orgsAsync.maybeWhen(
         data: (d) => d, orElse: () => <OrganizacionPolitica>[]);
 
@@ -533,8 +608,8 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
     ref.invalidate(actasDeMesaProvider(mesa.id));
   }
 
-  void _mostrarReasignar(BuildContext context, WidgetRef ref, MesaJrv mesa) {
-    // Cargar veedores del recinto para mostrarlos en el dropdown
+  void _mostrarReasignar(
+      BuildContext context, WidgetRef ref, MesaJrv mesa) {
     showDialog(
       context: context,
       builder: (ctx) => _DialogoReasignar(mesa: mesa, ref: ref),
@@ -559,7 +634,8 @@ class _FilaActaCoordinador extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Icon(
@@ -567,7 +643,9 @@ class _FilaActaCoordinador extends StatelessWidget {
                   ? Icons.check_circle_outline
                   : Icons.radio_button_unchecked,
               size: 18,
-              color: registrada ? Colors.green.shade600 : Colors.grey.shade400,
+              color: registrada
+                  ? Colors.green.shade600
+                  : Colors.grey.shade400,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -580,8 +658,8 @@ class _FilaActaCoordinador extends StatelessWidget {
                   if (acta?.gpsLat != null)
                     Text(
                       'GPS: ${acta!.gpsLat!.toStringAsFixed(5)}, ${acta!.gpsLng!.toStringAsFixed(5)}',
-                      style:
-                          TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                      style: TextStyle(
+                          fontSize: 10, color: Colors.grey.shade500),
                     ),
                 ],
               ),
@@ -589,7 +667,9 @@ class _FilaActaCoordinador extends StatelessWidget {
             _BadgeEstadoActa(acta: acta),
             const SizedBox(width: 8),
             Icon(
-              registrada ? Icons.edit_outlined : Icons.add_circle_outline,
+              registrada
+                  ? Icons.edit_outlined
+                  : Icons.add_circle_outline,
               size: 16,
               color: const Color(0xFF1B5E20),
             ),
@@ -607,8 +687,8 @@ class _BadgeEstadoActa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (acta == null) {
-      return _badge('Pendiente', Colors.orange.shade700, Colors.orange.shade50,
-          Colors.orange.shade200);
+      return _badge('Pendiente', Colors.orange.shade700,
+          Colors.orange.shade50, Colors.orange.shade200);
     }
     return switch (acta!.estado) {
       EstadoActa.ingresada => _badge('Ingresada', Colors.blue.shade700,
@@ -620,8 +700,10 @@ class _BadgeEstadoActa extends StatelessWidget {
     };
   }
 
-  Widget _badge(String label, Color color, Color bg, Color border) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+  Widget _badge(String label, Color color, Color bg, Color border) =>
+      Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(5),
@@ -629,20 +711,23 @@ class _BadgeEstadoActa extends StatelessWidget {
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.w500)),
       );
 }
 
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 // Diálogo reasignar veedor
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 class _DialogoReasignar extends ConsumerStatefulWidget {
   final MesaJrv mesa;
   final WidgetRef ref;
   const _DialogoReasignar({required this.mesa, required this.ref});
 
   @override
-  ConsumerState<_DialogoReasignar> createState() => _DialogoReasignarState();
+  ConsumerState<_DialogoReasignar> createState() =>
+      _DialogoReasignarState();
 }
 
 class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
@@ -656,15 +741,18 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
     return AlertDialog(
       title: Text(
         'Reasignar veedor — Mesa ${widget.mesa.numeroMesa}',
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        style:
+            const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
       content: veedoresAsync.when(
         loading: () => const SizedBox(
-            height: 60, child: Center(child: CircularProgressIndicator())),
+            height: 60,
+            child: Center(child: CircularProgressIndicator())),
         error: (e, _) => Text('Error: $e'),
         data: (veedores) {
           if (veedores.isEmpty) {
-            return const Text('No hay veedores disponibles en este recinto.',
+            return const Text(
+                'No hay veedores disponibles en este recinto.',
                 style: TextStyle(fontSize: 13));
           }
           return DropdownButtonFormField<String>(
@@ -688,8 +776,8 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar')),
         FilledButton(
-          style:
-              FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20)),
+          style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF1B5E20)),
           onPressed: _veedorSeleccionado == null
               ? null
               : () async {
@@ -700,18 +788,17 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Veedor reasignado correctamente'),
+                          content:
+                              Text('Veedor reasignado correctamente'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('Error: $e'),
-                            backgroundColor: Colors.red),
-                      );
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red));
                     }
                   }
                 },
@@ -722,9 +809,9 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
   }
 }
 
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 // Widgets auxiliares
-// ─────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 class _SinMesasView extends StatelessWidget {
   final VoidCallback onAgregar;
   const _SinMesasView({required this.onAgregar});
@@ -736,7 +823,8 @@ class _SinMesasView extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.inbox_outlined,
+                size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text('Sin mesas registradas',
                 style: TextStyle(
@@ -745,7 +833,8 @@ class _SinMesasView extends StatelessWidget {
                     color: Colors.grey.shade600)),
             const SizedBox(height: 8),
             Text('Agrega las mesas de este recinto.',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onAgregar,
@@ -761,33 +850,48 @@ class _SinMesasView extends StatelessWidget {
   }
 }
 
-class _CampoTexto extends StatelessWidget {
+// ── Campo de formulario con validación ───────────────────────────────────────
+class _CampoForm extends StatelessWidget {
   final TextEditingController ctrl;
   final String label;
   final bool digitsOnly;
   final int? maxLength;
+  final bool required;
+  final String? Function(String?)? validator;
+  final TextInputType? keyboard;
 
-  const _CampoTexto({
+  const _CampoForm({
     required this.ctrl,
     required this.label,
     this.digitsOnly = false,
     this.maxLength,
+    this.required = true,
+    this.validator,
+    this.keyboard,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
       controller: ctrl,
-      keyboardType: digitsOnly ? TextInputType.number : TextInputType.text,
+      keyboardType: keyboard ??
+          (digitsOnly ? TextInputType.number : TextInputType.text),
       inputFormatters: [
         if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+        if (maxLength != null)
+          LengthLimitingTextInputFormatter(maxLength),
       ],
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
         isDense: true,
       ),
+      validator: validator ??
+          (required
+              ? (v) => (v == null || v.trim().isEmpty)
+                  ? '$label es obligatorio'
+                  : null
+              : null),
     );
   }
 }

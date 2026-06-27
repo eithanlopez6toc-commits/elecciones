@@ -1,7 +1,9 @@
+// lib/core/utils/cedula_validator.dart
+
+/// Validador de cédula de identidad ecuatoriana.
+/// Implementa el algoritmo de módulo 10 del Registro Civil.
 class CedulaValidator {
-  /// Valida un número de cédula ecuatoriano.
-  ///
-  /// Requiere 10 dígitos y aplica la regla de verificación.
+  /// Retorna true si la cédula es válida.
   static bool isValid(String cedula) {
     final sanitized = cedula.trim();
     if (!RegExp(r'^\d{10}$').hasMatch(sanitized)) return false;
@@ -19,5 +21,21 @@ class CedulaValidator {
 
     final validator = (10 - (sum % 10)) % 10;
     return validator == lastDigit;
+  }
+
+  /// Para usar como validator en TextFormField.
+  /// Retorna null si es válida, o el mensaje de error si no.
+  static String? validate(String? cedula) {
+    if (cedula == null || cedula.trim().isEmpty) {
+      return 'La cédula es obligatoria';
+    }
+    final sanitized = cedula.trim();
+    if (sanitized.length != 10) {
+      return 'Debe tener 10 dígitos (ingresaste ${sanitized.length})';
+    }
+    if (!isValid(sanitized)) {
+      return 'Cédula ecuatoriana no válida';
+    }
+    return null;
   }
 }

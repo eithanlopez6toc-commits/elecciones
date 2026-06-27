@@ -39,15 +39,13 @@ class ResumenRecintoProv {
 
   int get totalActas => actasAlcalde + actasPrefecto;
   int get pendientes => (totalMesas * 2) - totalActas;
-  double get porcentaje =>
-      totalMesas == 0 ? 0 : totalActas / (totalMesas * 2);
+  double get porcentaje => totalMesas == 0 ? 0 : totalActas / (totalMesas * 2);
 }
 
 final resumenPorRecintoProvider =
     FutureProvider.family<ResumenRecintoProv, Recinto>((ref, recinto) async {
   final supabase = ref.watch(supabaseClientProvider);
 
-  // Mesas del recinto
   final mesasRes = await supabase
       .from(SupabaseConstants.mesasJrvTable)
       .select('id')
@@ -91,8 +89,7 @@ final actasDeRecintoProvider =
       .from(SupabaseConstants.mesasJrvTable)
       .select('id')
       .eq('recinto_id', recintoId);
-  final mesaIds =
-      (mesasRes as List).map((r) => r['id'] as int).toList();
+  final mesaIds = (mesasRes as List).map((r) => r['id'] as int).toList();
   if (mesaIds.isEmpty) return [];
 
   final res = await supabase
@@ -112,6 +109,8 @@ class VotosCandidato {
   final String dignidad;
   final String organizacion;
   final int totalVotos;
+  // Campo opcional para filtrar por recinto en el dashboard
+  final String? recintoNombre;
 
   const VotosCandidato({
     required this.candidatoId,
@@ -119,13 +118,13 @@ class VotosCandidato {
     required this.dignidad,
     required this.organizacion,
     required this.totalVotos,
+    this.recintoNombre,
   });
 }
 
 final dashboardVotosProvider =
     FutureProvider<List<VotosCandidato>>((ref) async {
   final supabase = ref.watch(supabaseClientProvider);
-  // Join votos_candidatos → candidatos → organizaciones_politicas
   final res = await supabase.from('votos_candidatos').select('''
     candidato_id,
     cantidad_votos,
@@ -136,7 +135,6 @@ final dashboardVotosProvider =
     )
   ''');
 
-  // Agrupar por candidato_id sumando votos
   final Map<int, VotosCandidato> mapa = {};
   for (final row in res as List) {
     final cid = row['candidato_id'] as int;
@@ -168,7 +166,7 @@ final dashboardVotosProvider =
   return lista;
 });
 
-// ─── Mesas de un recinto (para detalles) ────────────────────────────────────
+// ─── Mesas de un recinto ─────────────────────────────────────────────────────
 final mesasDeRecintoProvProv =
     FutureProvider.family<List<MesaJrv>, int>((ref, recintoId) async {
   final supabase = ref.watch(supabaseClientProvider);
@@ -182,11 +180,16 @@ final mesasDeRecintoProvProv =
       .toList();
 });
 
-// ─── Crear recinto ────────────────────────────────────────────────────────────
-final crearRecintoProvider =
-    Provider<Future<Recinto> Function(String canton, String parroquia,
-        String nombre, String? direccion)>((ref) {
-  return (canton, parroquia, nombre, direccion) async {
+// ─── Crear recinto (ahora incluye numJrv) ────────────────────────────────────
+final crearRecintoProvider = Provider<
+    Future<Recinto> Function(
+      String canton,
+      String parroquia,
+      String nombre,
+      String? direccion,
+      int numJrv, // ← NUEVO
+    )>((ref) {
+  return (canton, parroquia, nombre, direccion, numJrv) async {
     final supabase = ref.read(supabaseClientProvider);
     final res = await supabase
         .from(SupabaseConstants.recintosTable)
@@ -194,26 +197,34 @@ final crearRecintoProvider =
           'canton': canton,
           'parroquia': parroquia,
           'nombre': nombre,
-          'provincia': 'Ecuador', // ajusta según tu lógica
+          'provincia': 'Ecuador',
+          'num_jrv': numJrv, // ← NUEVO
           if (direccion != null) 'direccion': direccion,
         })
         .select()
         .single();
-    return RecintoModel.fromMap(res as Map<String, dynamic>);
+    return RecintoModel.fromMap(res);
   };
 });
 
-// ─── Crear coordinador de recinto ────────────────────────────────────────────
-final crearCoordinadorRecintoProvider =
-    Provider<Future<void> Function(String cedula, String nombres,
-        String apellidos, String telefono, int recintoId)>((ref) {
-  return (cedula, nombres, apellidos, telefono, recintoId) async {
+// ─── Crear coordinador de recinto (ahora incluye correo) ─────────────────────
+final crearCoordinadorRecintoProvider = Provider<
+    Future<void> Function(
+      String cedula,
+      String nombres,
+      String apellidos,
+      String telefono,
+      String correo, // ← NUEVO
+      int recintoId,
+    )>((ref) {
+  return (cedula, nombres, apellidos, telefono, correo, recintoId) async {
     final supabase = ref.read(supabaseClientProvider);
     await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
       'nombres': nombres,
       'apellidos': apellidos,
       'telefono': telefono,
+      'correo': correo, // ← NUEVO
       'rol': 'coordinador_recinto',
       'recinto_id': recintoId,
     });
@@ -221,8 +232,7 @@ final crearCoordinadorRecintoProvider =
 });
 
 // ─── Coordinadores de recinto ─────────────────────────────────────────────────
-final coordinadoresRecintoProvider =
-    FutureProvider<List<Usuario>>((ref) async {
+final coordinadoresRecintoProvider = FutureProvider<List<Usuario>>((ref) async {
   final supabase = ref.watch(supabaseClientProvider);
   final res = await supabase
       .from('usuarios')
@@ -230,7 +240,6 @@ final coordinadoresRecintoProvider =
       .eq('rol', 'coordinador_recinto')
       .order('nombre');
   return (res as List)
-      .map((r) =>
-          UsuarioModel.fromMap(r as Map<String, dynamic>, correo: ''))
+      .map((r) => UsuarioModel.fromMap(r as Map<String, dynamic>, correo: ''))
       .toList();
 });

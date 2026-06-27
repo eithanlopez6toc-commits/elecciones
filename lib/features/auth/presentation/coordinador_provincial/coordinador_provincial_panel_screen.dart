@@ -7,6 +7,44 @@ import '../../domain/entities/recinto.dart';
 import '../controller/login_controller.dart';
 import 'coordinador_provincial_providers.dart';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// VALIDADOR DE CÉDULA ECUATORIANA
+// ═════════════════════════════════════════════════════════════════════════════
+class CedulaValidator {
+  static bool isValid(String cedula) {
+    final sanitized = cedula.trim();
+    if (!RegExp(r'^\d{10}$').hasMatch(sanitized)) return false;
+
+    final digits = sanitized.split('').map(int.parse).toList();
+    final province = int.parse(sanitized.substring(0, 2));
+    if (province < 1 || province > 24) return false;
+
+    final lastDigit = digits[9];
+    int sum = 0;
+    for (var i = 0; i < 9; i++) {
+      final value = digits[i] * (i % 2 == 0 ? 2 : 1);
+      sum += value > 9 ? value - 9 : value;
+    }
+
+    final validator = (10 - (sum % 10)) % 10;
+    return validator == lastDigit;
+  }
+
+  static String? validate(String? cedula) {
+    final sanitized = cedula?.trim();
+    if (sanitized == null || sanitized.isEmpty)
+      return 'La cédula es obligatoria';
+    if (sanitized.length != 10) {
+      return 'Debe tener 10 dígitos (ingresaste ${sanitized.length})';
+    }
+    if (!isValid(sanitized)) return 'Cédula ecuatoriana no válida';
+    return null;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ═════════════════════════════════════════════════════════════════════════════
 class CoordinadorProvincialPanelScreen extends ConsumerStatefulWidget {
   const CoordinadorProvincialPanelScreen({super.key});
 
@@ -19,9 +57,8 @@ class _CoordinadorProvincialPanelScreenState
     extends ConsumerState<CoordinadorProvincialPanelScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-
-  // Filtro de dignidad en el dashboard
   String _dignidadFiltro = 'Todos';
+  String? _recintoFiltro; // null = todos los recintos
 
   @override
   void initState() {
@@ -52,8 +89,7 @@ class _CoordinadorProvincialPanelScreenState
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             if (usuario != null)
               Text('${usuario.nombres} ${usuario.apellidos}',
-                  style:
-                      const TextStyle(fontSize: 11, color: Colors.white70)),
+                  style: const TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
         actions: [
@@ -85,9 +121,15 @@ class _CoordinadorProvincialPanelScreenState
           labelStyle:
               const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           tabs: const [
-            Tab(icon: Icon(Icons.location_city_outlined, size: 18), text: 'Recintos'),
-            Tab(icon: Icon(Icons.bar_chart_outlined, size: 18), text: 'Dashboard'),
-            Tab(icon: Icon(Icons.people_outline, size: 18), text: 'Coordinadores'),
+            Tab(
+                icon: Icon(Icons.location_city_outlined, size: 18),
+                text: 'Recintos'),
+            Tab(
+                icon: Icon(Icons.bar_chart_outlined, size: 18),
+                text: 'Dashboard'),
+            Tab(
+                icon: Icon(Icons.people_outline, size: 18),
+                text: 'Coordinadores'),
           ],
         ),
       ),
@@ -96,8 +138,10 @@ class _CoordinadorProvincialPanelScreenState
         children: [
           _TabRecintos(onCrear: () => _dialogCrearRecinto(context)),
           _TabDashboard(
-            filtro: _dignidadFiltro,
-            onFiltroChanged: (v) => setState(() => _dignidadFiltro = v),
+            filtroDigidad: _dignidadFiltro,
+            filtroRecinto: _recintoFiltro,
+            onFiltroDigidadChanged: (v) => setState(() => _dignidadFiltro = v),
+            onFiltroRecintoChanged: (v) => setState(() => _recintoFiltro = v),
           ),
           const _TabCoordinadores(),
         ],
@@ -111,6 +155,8 @@ class _CoordinadorProvincialPanelScreenState
     final ctrlCanton = TextEditingController();
     final ctrlParroquia = TextEditingController();
     final ctrlDireccion = TextEditingController();
+    final ctrlNumJRV = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -118,17 +164,36 @@ class _CoordinadorProvincialPanelScreenState
         title: const Text('Nuevo recinto electoral',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Campo(ctrl: ctrlNombre, label: 'Nombre del recinto'),
-              const SizedBox(height: 10),
-              _Campo(ctrl: ctrlCanton, label: 'Cantón'),
-              const SizedBox(height: 10),
-              _Campo(ctrl: ctrlParroquia, label: 'Parroquia'),
-              const SizedBox(height: 10),
-              _Campo(ctrl: ctrlDireccion, label: 'Dirección (opcional)'),
-            ],
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CampoForm(ctrl: ctrlNombre, label: 'Nombre del recinto'),
+                const SizedBox(height: 10),
+                _CampoForm(ctrl: ctrlCanton, label: 'Cantón'),
+                const SizedBox(height: 10),
+                _CampoForm(ctrl: ctrlParroquia, label: 'Parroquia'),
+                const SizedBox(height: 10),
+                _CampoForm(
+                  ctrl: ctrlNumJRV,
+                  label: 'Número de JRV / mesas',
+                  digitsOnly: true,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Obligatorio';
+                    final n = int.tryParse(v);
+                    if (n == null || n < 1) return 'Debe ser mayor a 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                _CampoForm(
+                  ctrl: ctrlDireccion,
+                  label: 'Dirección (opcional)',
+                  required: false,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -139,9 +204,7 @@ class _CoordinadorProvincialPanelScreenState
             style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1A237E)),
             onPressed: () async {
-              if (ctrlNombre.text.isEmpty ||
-                  ctrlCanton.text.isEmpty ||
-                  ctrlParroquia.text.isEmpty) return;
+              if (!formKey.currentState!.validate()) return;
               try {
                 await ref.read(crearRecintoProvider)(
                   ctrlCanton.text.trim(),
@@ -150,6 +213,7 @@ class _CoordinadorProvincialPanelScreenState
                   ctrlDireccion.text.trim().isEmpty
                       ? null
                       : ctrlDireccion.text.trim(),
+                  int.parse(ctrlNumJRV.text.trim()), // número de JRV
                 );
                 ref.invalidate(todosLosRecintosProvider);
                 if (ctx.mounted) {
@@ -181,7 +245,9 @@ class _CoordinadorProvincialPanelScreenState
     final ctrlNombres = TextEditingController();
     final ctrlApellidos = TextEditingController();
     final ctrlTelefono = TextEditingController();
+    final ctrlCorreo = TextEditingController();
     int? recintoIdSeleccionado;
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -192,44 +258,113 @@ class _CoordinadorProvincialPanelScreenState
             title: const Text('Crear coordinador de recinto',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Campo(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Cédula con validación ecuatoriana ──
+                    _CampoForm(
                       ctrl: ctrlCedula,
-                      label: 'Cédula',
+                      label: 'Cédula de identidad',
                       digitsOnly: true,
-                      maxLength: 10),
-                  const SizedBox(height: 10),
-                  _Campo(ctrl: ctrlNombres, label: 'Nombres'),
-                  const SizedBox(height: 10),
-                  _Campo(ctrl: ctrlApellidos, label: 'Apellidos'),
-                  const SizedBox(height: 10),
-                  _Campo(
-                      ctrl: ctrlTelefono,
-                      label: 'Teléfono',
-                      digitsOnly: true),
-                  const SizedBox(height: 10),
-                  recintosAsync.when(
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
-                    data: (recintos) => DropdownButtonFormField<int>(
-                      value: recintoIdSeleccionado,
-                      hint: const Text('Asignar a recinto'),
-                      decoration: const InputDecoration(
-                          border: OutlineInputBorder(), isDense: true),
-                      items: recintos
-                          .map((r) => DropdownMenuItem(
-                                value: r.id,
-                                child: Text(r.nombre,
-                                    style: const TextStyle(fontSize: 13)),
-                              ))
-                          .toList(),
-                      onChanged: (v) =>
-                          setS(() => recintoIdSeleccionado = v),
+                      maxLength: 10,
+                      validator: CedulaValidator.validate,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlNombres,
+                      label: 'Nombres completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los nombres son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlApellidos,
+                      label: 'Apellidos completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los apellidos son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlTelefono,
+                      label: 'Teléfono de contacto',
+                      digitsOnly: true,
+                      maxLength: 10,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Obligatorio';
+                        if (v.length < 9) return 'Teléfono inválido';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Correo electrónico ──
+                    _CampoForm(
+                      ctrl: ctrlCorreo,
+                      label: 'Correo electrónico',
+                      keyboard: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'El correo es obligatorio';
+                        }
+                        final emailRegex =
+                            RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+                        if (!emailRegex.hasMatch(v.trim())) {
+                          return 'Correo electrónico inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Selector de recinto ──
+                    recintosAsync.when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, _) => Text('Error: $e'),
+                      data: (recintos) => DropdownButtonFormField<int>(
+                        value: recintoIdSeleccionado,
+                        hint: const Text('Asignar a recinto'),
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), isDense: true),
+                        validator: (v) =>
+                            v == null ? 'Selecciona un recinto' : null,
+                        items: recintos
+                            .map((r) => DropdownMenuItem(
+                                  value: r.id,
+                                  child: Text(r.nombre,
+                                      style: const TextStyle(fontSize: 13)),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setS(() => recintoIdSeleccionado = v),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Aviso de correo de confirmación
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.mail_outline,
+                              size: 16, color: Color(0xFF2E7D32)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Se enviará un correo de confirmación para activar la cuenta.',
+                              style: TextStyle(
+                                  fontSize: 11, color: Color(0xFF2E7D32)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -239,38 +374,38 @@ class _CoordinadorProvincialPanelScreenState
               FilledButton(
                 style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF1A237E)),
-                onPressed: recintoIdSeleccionado == null
-                    ? null
-                    : () async {
-                        try {
-                          await ref
-                              .read(crearCoordinadorRecintoProvider)(
-                            ctrlCedula.text.trim(),
-                            ctrlNombres.text.trim(),
-                            ctrlApellidos.text.trim(),
-                            ctrlTelefono.text.trim(),
-                            recintoIdSeleccionado!,
-                          );
-                          ref.invalidate(coordinadoresRecintoProvider);
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(
-                                content: Text('Coordinador creado'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: Colors.red,
-                            ));
-                          }
-                        }
-                      },
-                child: const Text('Crear'),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  try {
+                    await ref.read(crearCoordinadorRecintoProvider)(
+                      ctrlCedula.text.trim(),
+                      ctrlNombres.text.trim(),
+                      ctrlApellidos.text.trim(),
+                      ctrlTelefono.text.trim(),
+                      ctrlCorreo.text.trim(),
+                      recintoIdSeleccionado!,
+                    );
+                    ref.invalidate(coordinadoresRecintoProvider);
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Coordinador creado · Se envió correo de confirmación'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
+                  }
+                },
+                child: const Text('Crear y enviar correo'),
               ),
             ],
           );
@@ -295,11 +430,10 @@ class _TabRecintos extends ConsumerWidget {
       color: const Color(0xFF1A237E),
       onRefresh: () async => ref.invalidate(todosLosRecintosProvider),
       child: recintosAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-            child: Text('Error: $e',
-                style: const TextStyle(color: Colors.red))),
+            child:
+                Text('Error: $e', style: const TextStyle(color: Colors.red))),
         data: (recintos) {
           if (recintos.isEmpty) {
             return _EmptyState(
@@ -313,8 +447,7 @@ class _TabRecintos extends ConsumerWidget {
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: recintos.length,
-            itemBuilder: (_, i) =>
-                _TarjetaRecinto(recinto: recintos[i]),
+            itemBuilder: (_, i) => _TarjetaRecinto(recinto: recintos[i]),
           );
         },
       ),
@@ -328,8 +461,7 @@ class _TarjetaRecinto extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final resumenAsync =
-        ref.watch(resumenPorRecintoProvider(recinto));
+    final resumenAsync = ref.watch(resumenPorRecintoProvider(recinto));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -346,17 +478,17 @@ class _TarjetaRecinto extends ConsumerWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _verDetalle(context, recinto),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => _DetalleRecintoScreen(recinto: recinto),
+        )),
         child: Column(
           children: [
             // Header
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: const BoxDecoration(
                 color: Color(0xFFE8EAF6),
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
                 children: [
@@ -364,13 +496,11 @@ class _TarjetaRecinto extends ConsumerWidget {
                       size: 16, color: Color(0xFF1A237E)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      recinto.nombre,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A237E)),
-                    ),
+                    child: Text(recinto.nombre,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A237E))),
                   ),
                   const Icon(Icons.chevron_right,
                       size: 16, color: Color(0xFF1A237E)),
@@ -379,18 +509,15 @@ class _TarjetaRecinto extends ConsumerWidget {
             ),
             // Sub-info
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   const Icon(Icons.place_outlined,
                       size: 13, color: Color(0xFF9E9E9E)),
                   const SizedBox(width: 4),
-                  Text(
-                    '${recinto.canton} · ${recinto.parroquia}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF757575)),
-                  ),
+                  Text('${recinto.canton} · ${recinto.parroquia}',
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF757575))),
                   const Spacer(),
                   resumenAsync.when(
                     loading: () => const SizedBox(
@@ -419,8 +546,7 @@ class _TarjetaRecinto extends ConsumerWidget {
                             child: LinearProgressIndicator(
                               value: r.porcentaje,
                               minHeight: 6,
-                              backgroundColor:
-                                  const Color(0xFFE8EAF6),
+                              backgroundColor: const Color(0xFFE8EAF6),
                               color: r.porcentaje == 1
                                   ? Colors.green
                                   : const Color(0xFF3949AB),
@@ -440,12 +566,6 @@ class _TarjetaRecinto extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  void _verDetalle(BuildContext context, Recinto recinto) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => _DetalleRecintoScreen(recinto: recinto),
-    ));
   }
 }
 
@@ -483,7 +603,7 @@ class _PillAvance extends StatelessWidget {
   }
 }
 
-// ─── Detalle de un recinto (actas con GPS) ───────────────────────────────────
+// ─── Detalle de un recinto ────────────────────────────────────────────────────
 class _DetalleRecintoScreen extends ConsumerWidget {
   final Recinto recinto;
   const _DetalleRecintoScreen({required this.recinto});
@@ -507,11 +627,10 @@ class _DetalleRecintoScreen extends ConsumerWidget {
         ],
       ),
       body: actasAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-            child: Text('Error: $e',
-                style: const TextStyle(color: Colors.red))),
+            child:
+                Text('Error: $e', style: const TextStyle(color: Colors.red))),
         data: (actas) {
           if (actas.isEmpty) {
             return const Center(
@@ -556,22 +675,19 @@ class _TarjetaActaDetalle extends StatelessWidget {
                 acta.dignidad == Dignidad.alcalde
                     ? 'Acta de Alcalde'
                     : 'Acta de Prefecto',
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              Text(
-                'Mesa ${acta.mesaId}',
-                style: const TextStyle(
-                    fontSize: 11, color: Color(0xFF9E9E9E)),
-              ),
+              Text('Mesa ${acta.mesaId}',
+                  style:
+                      const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
             ],
           ),
           if (tieneGps) ...[
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(6),
@@ -583,19 +699,35 @@ class _TarjetaActaDetalle extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     'GPS: ${acta.gpsLat!.toStringAsFixed(6)}, ${acta.gpsLng!.toStringAsFixed(6)}',
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF2E7D32)),
+                    style:
+                        const TextStyle(fontSize: 11, color: Color(0xFF2E7D32)),
                   ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_off_outlined,
+                      size: 14, color: Colors.orange.shade700),
+                  const SizedBox(width: 6),
+                  Text('Sin coordenadas GPS',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.orange.shade700)),
                 ],
               ),
             ),
           ],
           const SizedBox(height: 8),
-          Text(
-            'Registrada: ${_formatFecha(acta.createdAt)}',
-            style:
-                const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
-          ),
+          Text('Registrada: ${_formatFecha(acta.createdAt)}',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
         ],
       ),
     );
@@ -618,45 +750,45 @@ class _BadgeEstado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (acta.estado) {
-      EstadoActa.ingresada => _pill(
-          'Ingresada', Colors.blue.shade700, Colors.blue.shade50),
-      EstadoActa.revisada => _pill(
-          'Revisada', Colors.green.shade700, Colors.green.shade50),
-      EstadoActa.conNovedad => _pill(
-          'Con novedad', Colors.red.shade700, Colors.red.shade50),
+      EstadoActa.ingresada =>
+        _pill('Ingresada', Colors.blue.shade700, Colors.blue.shade50),
+      EstadoActa.revisada =>
+        _pill('Revisada', Colors.green.shade700, Colors.green.shade50),
+      EstadoActa.conNovedad =>
+        _pill('Con novedad', Colors.red.shade700, Colors.red.shade50),
     };
   }
 
   Widget _pill(String label, Color color, Color bg) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(5),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
         child: Text(label,
             style: TextStyle(
-                fontSize: 10,
-                color: color,
-                fontWeight: FontWeight.w500)),
+                fontSize: 10, color: color, fontWeight: FontWeight.w500)),
       );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB 2 — DASHBOARD DE VOTOS
+// TAB 2 — DASHBOARD DE VOTOS (con filtro por recinto)
 // ═════════════════════════════════════════════════════════════════════════════
 class _TabDashboard extends ConsumerWidget {
-  final String filtro;
-  final ValueChanged<String> onFiltroChanged;
+  final String filtroDigidad;
+  final String? filtroRecinto;
+  final ValueChanged<String> onFiltroDigidadChanged;
+  final ValueChanged<String?> onFiltroRecintoChanged;
 
   const _TabDashboard({
-    required this.filtro,
-    required this.onFiltroChanged,
+    required this.filtroDigidad,
+    required this.filtroRecinto,
+    required this.onFiltroDigidadChanged,
+    required this.onFiltroRecintoChanged,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final votosAsync = ref.watch(dashboardVotosProvider);
+    final recintosAsync = ref.watch(todosLosRecintosProvider);
 
     return RefreshIndicator(
       color: const Color(0xFF1A237E),
@@ -664,22 +796,41 @@ class _TabDashboard extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // Selector de dignidad
+          // ── Filtro por recinto ──
+          recintosAsync.when(
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
+            data: (recintos) => _SelectorRecinto(
+              recintos: recintos,
+              seleccionado: filtroRecinto,
+              onChanged: onFiltroRecintoChanged,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ── Filtro por dignidad ──
           _SelectorDignidad(
-              valor: filtro, onChanged: onFiltroChanged),
+              valor: filtroDigidad, onChanged: onFiltroDigidadChanged),
           const SizedBox(height: 12),
 
           votosAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
                 child: Text('Error: $e',
                     style: const TextStyle(color: Colors.red))),
             data: (votos) {
-              final filtrados = filtro == 'Todos'
+              // Filtrar por recinto si aplica
+              var filtrados = filtroRecinto != null
                   ? votos
-                  : votos
-                      .where((v) => v.dignidad == filtro)
+                      .where((v) => v.recintoNombre == filtroRecinto)
+                      .toList()
+                  : votos;
+
+              // Filtrar por dignidad
+              filtrados = filtroDigidad == 'Todos'
+                  ? filtrados
+                  : filtrados
+                      .where((v) => v.dignidad == filtroDigidad)
                       .toList();
 
               if (filtrados.isEmpty) {
@@ -692,20 +843,54 @@ class _TabDashboard extends ConsumerWidget {
                 );
               }
 
-              final maxVotos = filtrados.isEmpty
-                  ? 1
-                  : filtrados.first.totalVotos;
+              // Encabezado del resumen
+              final totalVotos =
+                  filtrados.fold<int>(0, (acc, v) => acc + v.totalVotos);
+              final maxVotos =
+                  filtrados.isEmpty ? 1 : filtrados.first.totalVotos;
 
               return Column(
-                children: filtrados
-                    .asMap()
-                    .entries
-                    .map((e) => _BarraCandidato(
-                          posicion: e.key + 1,
-                          datos: e.value,
-                          maxVotos: maxVotos,
-                        ))
-                    .toList(),
+                children: [
+                  // Tarjeta resumen total
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A237E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.how_to_vote_outlined,
+                            color: Colors.white70, size: 20),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              filtroRecinto ?? 'Todos los recintos',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.white70),
+                            ),
+                            Text(
+                              '$totalVotos votos totales',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...filtrados.asMap().entries.map((e) => _BarraCandidato(
+                        posicion: e.key + 1,
+                        datos: e.value,
+                        maxVotos: maxVotos,
+                      )),
+                ],
               );
             },
           ),
@@ -716,11 +901,56 @@ class _TabDashboard extends ConsumerWidget {
   }
 }
 
+// ── Selector de recinto para el dashboard ────────────────────────────────────
+class _SelectorRecinto extends StatelessWidget {
+  final List<Recinto> recintos;
+  final String? seleccionado;
+  final ValueChanged<String?> onChanged;
+
+  const _SelectorRecinto({
+    required this.recintos,
+    required this.seleccionado,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: seleccionado,
+          isExpanded: true,
+          hint: const Text('Todos los recintos',
+              style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
+          icon: const Icon(Icons.filter_list_outlined,
+              size: 18, color: Color(0xFF1A237E)),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Todos los recintos', style: TextStyle(fontSize: 13)),
+            ),
+            ...recintos.map((r) => DropdownMenuItem<String?>(
+                  value: r.nombre,
+                  child: Text(r.nombre, style: const TextStyle(fontSize: 13)),
+                )),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectorDignidad extends StatelessWidget {
   final String valor;
   final ValueChanged<String> onChanged;
-  const _SelectorDignidad(
-      {required this.valor, required this.onChanged});
+  const _SelectorDignidad({required this.valor, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -741,8 +971,7 @@ class _SelectorDignidad extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color:
-                      sel ? const Color(0xFF1A237E) : Colors.transparent,
+                  color: sel ? const Color(0xFF1A237E) : Colors.transparent,
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Text(
@@ -776,8 +1005,7 @@ class _BarraCandidato extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final porcentaje =
-        maxVotos == 0 ? 0.0 : datos.totalVotos / maxVotos;
+    final porcentaje = maxVotos == 0 ? 0.0 : datos.totalVotos / maxVotos;
     final esPrimero = posicion == 1;
 
     return Container(
@@ -843,9 +1071,8 @@ class _BarraCandidato extends StatelessWidget {
               value: porcentaje,
               minHeight: 6,
               backgroundColor: const Color(0xFFE8EAF6),
-              color: esPrimero
-                  ? const Color(0xFF3949AB)
-                  : const Color(0xFF9E9E9E),
+              color:
+                  esPrimero ? const Color(0xFF3949AB) : const Color(0xFF9E9E9E),
             ),
           ),
         ],
@@ -865,19 +1092,15 @@ class _NumeroPosicion extends StatelessWidget {
       2: [const Color(0xFFE8E8E8), const Color(0xFF616161)],
       3: [const Color(0xFFCD7F32), const Color(0xFF5D4037)],
     };
-    final c = colors[pos] ??
-        [const Color(0xFFF5F5F5), const Color(0xFF9E9E9E)];
+    final c = colors[pos] ?? [const Color(0xFFF5F5F5), const Color(0xFF9E9E9E)];
     return Container(
       width: 30,
       height: 30,
-      decoration: BoxDecoration(
-          color: c[0], shape: BoxShape.circle),
+      decoration: BoxDecoration(color: c[0], shape: BoxShape.circle),
       child: Center(
         child: Text('$pos',
             style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: c[1])),
+                fontSize: 12, fontWeight: FontWeight.w700, color: c[1])),
       ),
     );
   }
@@ -895,14 +1118,12 @@ class _TabCoordinadores extends ConsumerWidget {
 
     return RefreshIndicator(
       color: const Color(0xFF1A237E),
-      onRefresh: () async =>
-          ref.invalidate(coordinadoresRecintoProvider),
+      onRefresh: () async => ref.invalidate(coordinadoresRecintoProvider),
       child: coordsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-            child: Text('Error: $e',
-                style: const TextStyle(color: Colors.red))),
+            child:
+                Text('Error: $e', style: const TextStyle(color: Colors.red))),
         data: (coords) {
           if (coords.isEmpty) {
             return const _EmptyState(
@@ -922,8 +1143,8 @@ class _TabCoordinadores extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: const Color(0xFFE0E0E0), width: 0.5),
+                  border:
+                      Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
                 ),
                 child: Row(
                   children: [
@@ -931,9 +1152,7 @@ class _TabCoordinadores extends ConsumerWidget {
                       radius: 20,
                       backgroundColor: const Color(0xFFE8EAF6),
                       child: Text(
-                        c.nombres.isNotEmpty
-                            ? c.nombres[0].toUpperCase()
-                            : '?',
+                        c.nombres.isNotEmpty ? c.nombres[0].toUpperCase() : '?',
                         style: const TextStyle(
                             color: Color(0xFF1A237E),
                             fontWeight: FontWeight.w700),
@@ -946,12 +1165,13 @@ class _TabCoordinadores extends ConsumerWidget {
                         children: [
                           Text('${c.nombres} ${c.apellidos}',
                               style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600)),
+                                  fontSize: 13, fontWeight: FontWeight.w600)),
                           Text(c.cedula,
                               style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF9E9E9E))),
+                                  fontSize: 11, color: Color(0xFF9E9E9E))),
+                          Text(c.correo,
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFF9E9E9E))),
                         ],
                       ),
                     ),
@@ -1015,8 +1235,7 @@ class _EmptyState extends StatelessWidget {
                     color: Colors.grey.shade600)),
             const SizedBox(height: 8),
             Text(sub,
-                style: TextStyle(
-                    fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
             if (boton != null && onTap != null) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
@@ -1034,35 +1253,47 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _Campo extends StatelessWidget {
+// ── Campo de formulario con validación integrada ──────────────────────────────
+class _CampoForm extends StatelessWidget {
   final TextEditingController ctrl;
   final String label;
   final bool digitsOnly;
   final int? maxLength;
+  final bool required;
+  final String? Function(String?)? validator;
+  final TextInputType? keyboard;
 
-  const _Campo({
+  const _CampoForm({
     required this.ctrl,
     required this.label,
     this.digitsOnly = false,
     this.maxLength,
+    this.required = true,
+    this.validator,
+    this.keyboard,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
       controller: ctrl,
       keyboardType:
-          digitsOnly ? TextInputType.number : TextInputType.text,
+          keyboard ?? (digitsOnly ? TextInputType.number : TextInputType.text),
       inputFormatters: [
         if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-        if (maxLength != null)
-          LengthLimitingTextInputFormatter(maxLength),
+        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
       ],
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
         isDense: true,
       ),
+      validator: validator ??
+          (required
+              ? (v) => (v == null || v.trim().isEmpty)
+                  ? '$label es obligatorio'
+                  : null
+              : null),
     );
   }
 }

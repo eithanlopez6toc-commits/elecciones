@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,42 +13,123 @@ import 'features/auth/presentation/auth/cambiar_password_screen.dart';
 import 'features/auth/presentation/coordinador_provincial/coordinador_provincial_panel_screen.dart';
 import 'features/auth/presentation/coordinador_recinto/coordinador_recinto_panel_screen.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: SupabaseConstants.url,
-    publishableKey: SupabaseConstants.anonKey,
+    anonKey: SupabaseConstants.anonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.implicit, // ← flujo implícito: manda tokens directo
+    ),
   );
-  runApp(const ControlElectoralApp());
+  runApp(const ProviderScope(child: ControlElectoralApp()));
 }
 
-class ControlElectoralApp extends StatelessWidget {
+class ControlElectoralApp extends StatefulWidget {
   const ControlElectoralApp({super.key});
 
   @override
+  State<ControlElectoralApp> createState() => _ControlElectoralAppState();
+}
+
+class _ControlElectoralAppState extends State<ControlElectoralApp> {
+  final _appLinks = AppLinks();
+
+  @override
+  void initState() {
+    super.initState();
+    _iniciarDeepLinks();
+  }
+
+  void _iniciarDeepLinks() {
+    // 1. Captura el link inicial si la app fue abierta DESDE CERRADA por el link
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _manejarDeepLink(uri);
+    });
+
+    // 2. Captura links mientras la app ya está abierta/en background
+    _appLinks.uriLinkStream.listen((uri) {
+      _manejarDeepLink(uri);
+    });
+  }
+
+  Future<void> _manejarDeepLink(Uri uri) async {
+    debugPrint('🔗 Deep link recibido: $uri');
+
+    // ── Flujo implícito: #access_token=xxx&refresh_token=xxx&type=recovery ──
+    final fragment = uri.fragment;
+    if (fragment.isEmpty) {
+      debugPrint('⚠️ Deep link sin fragment, se ignora.');
+      return;
+    }
+
+    final params = Uri.splitQueryString(fragment);
+    final accessToken = params['access_token'];
+    final refreshToken = params['refresh_token'];
+    final type = params['type'];
+
+    debugPrint('📦 Params → type=$type, accessToken=${accessToken != null}, refreshToken=${refreshToken != null}');
+
+    if (accessToken == null || refreshToken == null) {
+      debugPrint('⚠️ Faltan tokens en el deep link.');
+      return;
+    }
+
+    try {
+      await Supabase.instance.client.auth.setSession(refreshToken);
+      debugPrint('✅ Sesión establecida correctamente.');
+    } catch (e) {
+      debugPrint('❌ Error estableciendo sesión: $e');
+      return;
+    }
+
+    if (!mounted) return;
+
+    if (type == 'recovery' || type == 'invite') {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/cambiar-password',
+        (route) => false,
+      );
+    } else if (type == 'signup') {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+      final ctx = navigatorKey.currentState?.overlay?.context;
+      if (ctx != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+          content: Text('✅ Cuenta confirmada. Ya puedes iniciar sesión.'),
+          backgroundColor: Color(0xFF039855),
+        ));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp(
-        title: 'Control Electoral',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: 'Inter',
-        ),
-        home: const LoginScreen(),
-        // ─── REGISTRO DE RUTAS NOMBRADAS ─────────────────────────────────────
-        routes: {
-          '/veedor': (_) => const VeedorPanelScreen(),
-          '/olvide-password': (_) => const OlvidePasswordScreen(),
-          '/cambiar-password': (_) => const CambiarPasswordScreen(),
-          '/provincial': (_) => const CoordinadorProvincialPanelScreen(),
-          '/coordinador-recinto': (_) => const CoordinadorRecintoPanelScreen(),
-        },
+    return MaterialApp(
+      title: 'Control Electoral',
+      debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Inter',
       ),
+      home: const LoginScreen(),
+      routes: {
+        '/veedor': (_) => const VeedorPanelScreen(),
+        '/olvide-password': (_) => const OlvidePasswordScreen(),
+        '/cambiar-password': (_) => const CambiarPasswordScreen(),
+        '/provincial': (_) => const CoordinadorProvincialPanelScreen(),
+        '/coordinador-recinto': (_) => const CoordinadorRecintoPanelScreen(),
+      },
     );
   }
 }
 
+// ─── LOGIN SCREEN ─────────────────────────────────────────────────────────────
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -119,7 +201,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     if (usuario.rol != rolEsperado) {
       await ref.read(loginControllerProvider.notifier).logout();
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('El rol seleccionado no corresponde a tu cuenta.'),
@@ -173,30 +254,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFE4E7EC),
-                          width: 1,
-                        ),
+                        border: Border.all(color: const Color(0xFFE4E7EC)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Row(
                             children: const [
-                              Icon(
-                                Icons.verified_user_outlined,
-                                color: Color(0xFF3422CD),
-                                size: 22,
-                              ),
+                              Icon(Icons.verified_user_outlined,
+                                  color: Color(0xFF3422CD), size: 22),
                               SizedBox(width: 8),
-                              Text(
-                                'Voter Portal',
-                                style: TextStyle(
-                                  color: Color(0xFF3422CD),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              Text('Voter Portal',
+                                  style: TextStyle(
+                                      color: Color(0xFF3422CD),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 32),
@@ -207,33 +279,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               color: const Color(0xFFE8E7FF),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
-                              Icons.unarchive_outlined,
-                              color: Color(0xFF3422CD),
-                              size: 30,
-                            ),
+                            child: const Icon(Icons.unarchive_outlined,
+                                color: Color(0xFF3422CD), size: 30),
                           ),
                           const SizedBox(height: 24),
-                          const Text(
-                            'Acceda a su portal de votación',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF101828),
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
+                          const Text('Acceda a su portal de votación',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: Color(0xFF101828),
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.5)),
                           const SizedBox(height: 10),
                           const Text(
-                            'Ingrese sus credenciales oficiales para continuar de forma segura.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF475467),
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                          ),
+                              'Ingrese sus credenciales oficiales para continuar de forma segura.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: Color(0xFF475467),
+                                  fontSize: 14,
+                                  height: 1.4)),
                           const SizedBox(height: 32),
                           _buildLabel('Seleccionar Rol'),
                           const SizedBox(height: 6),
@@ -259,14 +323,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               GestureDetector(
                                 onTap: () => Navigator.of(context)
                                     .pushNamed('/olvide-password'),
-                                child: const Text(
-                                  '¿Olvidó su contraseña?',
-                                  style: TextStyle(
-                                    color: Color(0xFF3422CD),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                child: const Text('¿Olvidó su contraseña?',
+                                    style: TextStyle(
+                                        color: Color(0xFF3422CD),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600)),
                               ),
                             ],
                           ),
@@ -285,8 +346,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 size: 20,
                               ),
                               onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -298,24 +358,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 color: const Color(0xFFFEF3F2),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: const Color(0xFFFECDCA),
-                                ),
+                                    color: const Color(0xFFFECDCA)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    color: Color(0xFFD92D20),
-                                    size: 18,
-                                  ),
+                                  const Icon(Icons.error_outline,
+                                      color: Color(0xFFD92D20), size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       _mensajeError('${state.error}'),
                                       style: const TextStyle(
-                                        color: Color(0xFFB42318),
-                                        fontSize: 13,
-                                      ),
+                                          color: Color(0xFFB42318),
+                                          fontSize: 13),
                                     ),
                                   ),
                                 ],
@@ -327,10 +382,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             child: state.isLoading
                                 ? const Center(
                                     child: CircularProgressIndicator(
-                                      color: Color(0xFF3422CD),
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
+                                        color: Color(0xFF3422CD),
+                                        strokeWidth: 2.5))
                                 : ElevatedButton(
                                     onPressed: _onLoginPressed,
                                     style: ElevatedButton.styleFrom(
@@ -339,41 +392,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       shadowColor: const Color(0xFF3422CD)
                                           .withOpacity(0.3),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
                                     ),
-                                    child: const Text(
-                                      'Iniciar Sesión',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                    child: const Text('Iniciar Sesión',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600)),
                                   ),
                           ),
                           const SizedBox(height: 20),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
-                                '¿No tienes cuenta? ',
-                                style: TextStyle(
-                                  color: Color(0xFF667085),
-                                  fontSize: 13,
-                                ),
-                              ),
+                              const Text('¿No tienes cuenta? ',
+                                  style: TextStyle(
+                                      color: Color(0xFF667085), fontSize: 13)),
                               GestureDetector(
                                 onTap: () => Navigator.of(context)
                                     .pushNamed('/solicitar-acceso'),
-                                child: const Text(
-                                  'Solicitar acceso',
-                                  style: TextStyle(
-                                    color: Color(0xFF3422CD),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                child: const Text('Solicitar acceso',
+                                    style: TextStyle(
+                                        color: Color(0xFF3422CD),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600)),
                               ),
                             ],
                           ),
@@ -387,27 +430,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         color: const Color(0xFFD1FADF),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFF6EE7B7).withOpacity(0.5),
-                        ),
+                            color: const Color(0xFF6EE7B7).withOpacity(0.5)),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.info,
-                            color: Color(0xFF065F46),
-                            size: 20,
-                          ),
+                          Icon(Icons.info, color: Color(0xFF065F46), size: 20),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Este sistema utiliza encriptación de grado militar y autenticación de dos factores para proteger su integridad democrática.',
                               style: TextStyle(
-                                color: Color(0xFF065F46),
-                                fontSize: 12,
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                              ),
+                                  color: Color(0xFF065F46),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -423,19 +460,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Color(0xFF344054),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
+  Widget _buildLabel(String text) => Align(
+        alignment: Alignment.centerLeft,
+        child: Text(text,
+            style: const TextStyle(
+                color: Color(0xFF344054),
+                fontSize: 14,
+                fontWeight: FontWeight.w500)),
+      );
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -459,22 +491,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide:
+                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
     );
   }
@@ -484,80 +512,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       value: _selectedRol,
       hint: Row(
         children: const [
-          Icon(
-            Icons.account_circle_outlined,
-            color: Color(0xFF667085),
-            size: 20,
-          ),
+          Icon(Icons.account_circle_outlined,
+              color: Color(0xFF667085), size: 20),
           SizedBox(width: 10),
-          Text(
-            'Seleccionar un rol',
-            style: TextStyle(color: Color(0xFF98A2B3), fontSize: 14),
-          ),
+          Text('Seleccionar un rol',
+              style: TextStyle(color: Color(0xFF98A2B3), fontSize: 14)),
         ],
       ),
-      icon: const Icon(
-        Icons.keyboard_arrow_down_rounded,
-        color: Color(0xFF667085),
-      ),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded,
+          color: Color(0xFF667085)),
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            borderSide:
+                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
-      items: const [
-        'Coordinador Provincial',
-        'Coordinador Recinto',
-        'Veedor',
-      ]
-          .map(
-            (value) => DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                style: const TextStyle(
-                  color: Color(0xFF101828),
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          )
+      items: const ['Coordinador Provincial', 'Coordinador Recinto', 'Veedor']
+          .map((value) => DropdownMenuItem<String>(
+                value: value,
+                child: Text(value,
+                    style: const TextStyle(
+                        color: Color(0xFF101828), fontSize: 14)),
+              ))
           .toList(),
       onChanged: (value) => setState(() => _selectedRol = value),
     );
   }
 
   String _mensajeError(String error) {
-    if (error.contains('Cédula inválida')) {
+    if (error.contains('Cédula inválida'))
       return 'Cédula inválida. Verifica el número.';
-    }
-    if (error.contains('Invalid login credentials')) {
+    if (error.contains('Invalid login credentials'))
       return 'Cédula o contraseña incorrectos.';
-    }
-    if (error.contains('rate_limit')) {
+    if (error.contains('rate_limit'))
       return 'Demasiados intentos. Espera un momento.';
-    }
-    if (error.contains('no registrado') || error.contains('not found')) {
+    if (error.contains('no registrado') || error.contains('not found'))
       return 'Usuario no registrado en el sistema.';
-    }
-    if (error.contains('Email not confirmed')) {
-      return 'Correo electrónico no confirmado. Revisa tu bandeja de entrada.';
-    }
-    return error; // muestra el error real para depuración
+    if (error.contains('Email not confirmed'))
+      return 'Correo no confirmado. Revisa tu bandeja de entrada.';
+    return error;
   }
 }

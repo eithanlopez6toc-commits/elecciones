@@ -977,7 +977,7 @@ key.properties
 📄 ARCHIVO: .flutter-plugins-dependencies
 ================================================
 
-{"info":"This is a generated file; do not edit or check into version control.","plugins":{"ios":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"camera_avfoundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_avfoundation-0.9.17+5/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_apple-2.3.9/","native_build":true,"dependencies":[]},{"name":"path_provider_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"permission_handler_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.10/","native_build":true,"dependencies":[]},{"name":"shared_preferences_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.3/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"url_launcher_ios","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.2/","native_build":true,"dependencies":[]}],"android":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"camera_android_camerax","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_android_camerax-0.6.5+2/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"flutter_plugin_android_lifecycle","path":"/Users/dam/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.19/","native_build":true,"dependencies":[]},{"name":"geolocator_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_android-4.6.1/","native_build":true,"dependencies":[]},{"name":"path_provider_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_android-2.2.4/","native_build":true,"dependencies":[]},{"name":"permission_handler_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_android-12.0.13/","native_build":true,"dependencies":[]},{"name":"shared_preferences_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_android-2.2.2/","native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","native_build":true,"dependencies":[]},{"name":"url_launcher_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.2/","native_build":true,"dependencies":[]}],"macos":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_apple-2.3.9/","native_build":true,"dependencies":[]},{"name":"path_provider_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"shared_preferences_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.3/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"url_launcher_macos","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.2/","native_build":true,"dependencies":[]}],"linux":[{"name":"app_links_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links_linux-1.0.3/","native_build":false,"dependencies":["gtk"]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":false,"dependencies":[]},{"name":"gtk","path":"/Users/dam/.pub-cache/hosted/pub.dev/gtk-2.2.0/","native_build":true,"dependencies":[]},{"name":"path_provider_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/","native_build":false,"dependencies":[]},{"name":"shared_preferences_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/","native_build":false,"dependencies":["path_provider_linux"]},{"name":"url_launcher_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.1/","native_build":true,"dependencies":[]}],"windows":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_windows-0.2.3/","native_build":true,"dependencies":[]},{"name":"path_provider_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/","native_build":false,"dependencies":[]},{"name":"permission_handler_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/","native_build":true,"dependencies":[]},{"name":"shared_preferences_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/","native_build":false,"dependencies":["path_provider_windows"]},{"name":"url_launcher_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.3/","native_build":true,"dependencies":[]}],"web":[{"name":"app_links_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links_web-1.0.4/","dependencies":[]},{"name":"camera_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_web-0.3.5/","dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","dependencies":[]},{"name":"geolocator_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_web-4.0.0/","dependencies":[]},{"name":"permission_handler_html","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/","dependencies":[]},{"name":"shared_preferences_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.1/","dependencies":[]},{"name":"url_launcher_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_web-2.3.3/","dependencies":[]}]},"dependencyGraph":[{"name":"app_links","dependencies":["app_links_linux","app_links_web"]},{"name":"app_links_linux","dependencies":["gtk"]},{"name":"app_links_web","dependencies":[]},{"name":"camera","dependencies":["camera_android_camerax","camera_avfoundation","camera_web","flutter_plugin_android_lifecycle"]},{"name":"camera_android_camerax","dependencies":[]},{"name":"camera_avfoundation","dependencies":[]},{"name":"camera_web","dependencies":[]},{"name":"connectivity_plus","dependencies":[]},{"name":"flutter_plugin_android_lifecycle","dependencies":[]},{"name":"geolocator","dependencies":["geolocator_android","geolocator_apple","geolocator_web","geolocator_windows"]},{"name":"geolocator_android","dependencies":[]},{"name":"geolocator_apple","dependencies":[]},{"name":"geolocator_web","dependencies":[]},{"name":"geolocator_windows","dependencies":[]},{"name":"gtk","dependencies":[]},{"name":"path_provider","dependencies":["path_provider_android","path_provider_foundation","path_provider_linux","path_provider_windows"]},{"name":"path_provider_android","dependencies":[]},{"name":"path_provider_foundation","dependencies":[]},{"name":"path_provider_linux","dependencies":[]},{"name":"path_provider_windows","dependencies":[]},{"name":"permission_handler","dependencies":["permission_handler_android","permission_handler_apple","permission_handler_html","permission_handler_windows"]},{"name":"permission_handler_android","dependencies":[]},{"name":"permission_handler_apple","dependencies":[]},{"name":"permission_handler_html","dependencies":[]},{"name":"permission_handler_windows","dependencies":[]},{"name":"shared_preferences","dependencies":["shared_preferences_android","shared_preferences_foundation","shared_preferences_linux","shared_preferences_web","shared_preferences_windows"]},{"name":"shared_preferences_android","dependencies":[]},{"name":"shared_preferences_foundation","dependencies":[]},{"name":"shared_preferences_linux","dependencies":["path_provider_linux"]},{"name":"shared_preferences_web","dependencies":[]},{"name":"shared_preferences_windows","dependencies":["path_provider_windows"]},{"name":"sqflite","dependencies":[]},{"name":"url_launcher","dependencies":["url_launcher_android","url_launcher_ios","url_launcher_linux","url_launcher_macos","url_launcher_web","url_launcher_windows"]},{"name":"url_launcher_android","dependencies":[]},{"name":"url_launcher_ios","dependencies":[]},{"name":"url_launcher_linux","dependencies":[]},{"name":"url_launcher_macos","dependencies":[]},{"name":"url_launcher_web","dependencies":[]},{"name":"url_launcher_windows","dependencies":[]}],"date_created":"2026-06-26 16:50:13.853143","version":"3.19.6"}
+{"info":"This is a generated file; do not edit or check into version control.","plugins":{"ios":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"camera_avfoundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_avfoundation-0.9.17+5/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_apple-2.3.9/","native_build":true,"dependencies":[]},{"name":"path_provider_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"permission_handler_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_apple-9.4.10/","native_build":true,"dependencies":[]},{"name":"shared_preferences_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.3/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"url_launcher_ios","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.2/","native_build":true,"dependencies":[]}],"android":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"camera_android_camerax","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_android_camerax-0.6.5+2/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"flutter_plugin_android_lifecycle","path":"/Users/dam/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.19/","native_build":true,"dependencies":[]},{"name":"geolocator_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_android-4.6.1/","native_build":true,"dependencies":[]},{"name":"path_provider_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_android-2.2.4/","native_build":true,"dependencies":[]},{"name":"permission_handler_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_android-12.0.13/","native_build":true,"dependencies":[]},{"name":"shared_preferences_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_android-2.2.2/","native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","native_build":true,"dependencies":[]},{"name":"url_launcher_android","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.2/","native_build":true,"dependencies":[]}],"macos":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_apple","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_apple-2.3.9/","native_build":true,"dependencies":[]},{"name":"path_provider_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"shared_preferences_foundation","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_foundation-2.5.3/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"sqflite","path":"/Users/dam/.pub-cache/hosted/pub.dev/sqflite-2.3.3+1/","shared_darwin_source":true,"native_build":true,"dependencies":[]},{"name":"url_launcher_macos","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.2/","native_build":true,"dependencies":[]}],"linux":[{"name":"app_links_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links_linux-1.0.3/","native_build":false,"dependencies":["gtk"]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":false,"dependencies":[]},{"name":"gtk","path":"/Users/dam/.pub-cache/hosted/pub.dev/gtk-2.2.0/","native_build":true,"dependencies":[]},{"name":"path_provider_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/","native_build":false,"dependencies":[]},{"name":"shared_preferences_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_linux-2.4.1/","native_build":false,"dependencies":["path_provider_linux"]},{"name":"url_launcher_linux","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.1/","native_build":true,"dependencies":[]}],"windows":[{"name":"app_links","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links-6.4.0/","native_build":true,"dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","native_build":true,"dependencies":[]},{"name":"geolocator_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_windows-0.2.3/","native_build":true,"dependencies":[]},{"name":"path_provider_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/","native_build":false,"dependencies":[]},{"name":"permission_handler_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_windows-0.2.1/","native_build":true,"dependencies":[]},{"name":"shared_preferences_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1/","native_build":false,"dependencies":["path_provider_windows"]},{"name":"url_launcher_windows","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_windows-3.1.3/","native_build":true,"dependencies":[]}],"web":[{"name":"app_links_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/app_links_web-1.0.4/","dependencies":[]},{"name":"camera_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/camera_web-0.3.5/","dependencies":[]},{"name":"connectivity_plus","path":"/Users/dam/.pub-cache/hosted/pub.dev/connectivity_plus-6.1.5/","dependencies":[]},{"name":"geolocator_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/geolocator_web-4.0.0/","dependencies":[]},{"name":"permission_handler_html","path":"/Users/dam/.pub-cache/hosted/pub.dev/permission_handler_html-0.1.3+5/","dependencies":[]},{"name":"shared_preferences_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/shared_preferences_web-2.4.1/","dependencies":[]},{"name":"url_launcher_web","path":"/Users/dam/.pub-cache/hosted/pub.dev/url_launcher_web-2.3.3/","dependencies":[]}]},"dependencyGraph":[{"name":"app_links","dependencies":["app_links_linux","app_links_web"]},{"name":"app_links_linux","dependencies":["gtk"]},{"name":"app_links_web","dependencies":[]},{"name":"camera","dependencies":["camera_android_camerax","camera_avfoundation","camera_web","flutter_plugin_android_lifecycle"]},{"name":"camera_android_camerax","dependencies":[]},{"name":"camera_avfoundation","dependencies":[]},{"name":"camera_web","dependencies":[]},{"name":"connectivity_plus","dependencies":[]},{"name":"flutter_plugin_android_lifecycle","dependencies":[]},{"name":"geolocator","dependencies":["geolocator_android","geolocator_apple","geolocator_web","geolocator_windows"]},{"name":"geolocator_android","dependencies":[]},{"name":"geolocator_apple","dependencies":[]},{"name":"geolocator_web","dependencies":[]},{"name":"geolocator_windows","dependencies":[]},{"name":"gtk","dependencies":[]},{"name":"path_provider","dependencies":["path_provider_android","path_provider_foundation","path_provider_linux","path_provider_windows"]},{"name":"path_provider_android","dependencies":[]},{"name":"path_provider_foundation","dependencies":[]},{"name":"path_provider_linux","dependencies":[]},{"name":"path_provider_windows","dependencies":[]},{"name":"permission_handler","dependencies":["permission_handler_android","permission_handler_apple","permission_handler_html","permission_handler_windows"]},{"name":"permission_handler_android","dependencies":[]},{"name":"permission_handler_apple","dependencies":[]},{"name":"permission_handler_html","dependencies":[]},{"name":"permission_handler_windows","dependencies":[]},{"name":"shared_preferences","dependencies":["shared_preferences_android","shared_preferences_foundation","shared_preferences_linux","shared_preferences_web","shared_preferences_windows"]},{"name":"shared_preferences_android","dependencies":[]},{"name":"shared_preferences_foundation","dependencies":[]},{"name":"shared_preferences_linux","dependencies":["path_provider_linux"]},{"name":"shared_preferences_web","dependencies":[]},{"name":"shared_preferences_windows","dependencies":["path_provider_windows"]},{"name":"sqflite","dependencies":[]},{"name":"url_launcher","dependencies":["url_launcher_android","url_launcher_ios","url_launcher_linux","url_launcher_macos","url_launcher_web","url_launcher_windows"]},{"name":"url_launcher_android","dependencies":[]},{"name":"url_launcher_ios","dependencies":[]},{"name":"url_launcher_linux","dependencies":[]},{"name":"url_launcher_macos","dependencies":[]},{"name":"url_launcher_web","dependencies":[]},{"name":"url_launcher_windows","dependencies":[]}],"date_created":"2026-06-26 19:19:17.061450","version":"3.19.6"}
 
           
 ================================================
@@ -1176,42 +1176,50 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, Usuario>> login(String cedula, String password) async {
-    try {
-      final authResponse = await _supabase.auth.signInWithPassword(
-        email: '$cedula@controlelectoral.local',
-        password: password,
-      );
+  try {
+    final email = '$cedula@controlelectoral.local';
+    print('🔐 Intentando login con: $email'); // ← agrega esto
 
-      if (authResponse.user == null) {
-        return Left(ServerFailure('Error en la autenticación, intente nuevamente'));
-      }
+    final authResponse = await _supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
 
-      final resultado = await _supabase
-          .from(SupabaseConstants.usuariosTable)
-          .select()
-          .eq('id', authResponse.user!.id)
-          .maybeSingle();
+    print('✅ Auth response: ${authResponse.user?.id}'); // ← y esto
 
-      if (resultado == null) {
-        await _supabase.auth.signOut();
-        return Left(ServerFailure('Usuario no registrado en el sistema electoral'));
-      }
-
-      final usuario = UsuarioModel.fromMap(
-        resultado,
-        correo: authResponse.user!.email ?? '',
-      );
-
-      return Right(usuario);
-    } on AuthException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      try {
-        await _supabase.auth.signOut();
-      } catch (_) {}
-      return Left(ServerFailure('Error inesperado: ${e.toString()}'));
+    if (authResponse.user == null) {
+      return Left(ServerFailure('Error en la autenticación'));
     }
+
+    print('📋 Buscando perfil...'); // ← y esto
+    final resultado = await _supabase
+        .from(SupabaseConstants.usuariosTable)
+        .select()
+        .eq('id', authResponse.user!.id)
+        .maybeSingle();
+
+    print('👤 Perfil encontrado: $resultado'); // ← y esto
+
+    if (resultado == null) {
+      await _supabase.auth.signOut();
+      return Left(ServerFailure('Usuario no registrado'));
+    }
+
+    final usuario = UsuarioModel.fromMap(
+      resultado,
+      correo: authResponse.user!.email ?? '',
+    );
+    return Right(usuario);
+
+  } on AuthException catch (e) {
+    print('❌ AuthException: ${e.message}'); // ← y esto
+    return Left(ServerFailure(e.message));
+  } catch (e) {
+    print('💥 Error inesperado: $e'); // ← y esto
+    try { await _supabase.auth.signOut(); } catch (_) {}
+    return Left(ServerFailure('Error inesperado: ${e.toString()}'));
   }
+}
 }
 
           
@@ -4910,14 +4918,1573 @@ String _dignidadToDb(Dignidad d) {
 📄 ARCHIVO: lib/features/auth/presentation/coordinador_provincial/coordinador_provincial_panel_screen.dart
 ================================================
 
+// lib/features/auth/presentation/coordinador_provincial/coordinador_provincial_panel_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entities/acta.dart';
+import '../../domain/entities/recinto.dart';
+import '../controller/login_controller.dart';
+import 'coordinador_provincial_providers.dart';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// VALIDADOR DE CÉDULA ECUATORIANA
+// ═════════════════════════════════════════════════════════════════════════════
+class CedulaValidator {
+  static bool isValid(String cedula) {
+    final sanitized = cedula.trim();
+    if (!RegExp(r'^\d{10}$').hasMatch(sanitized)) return false;
+
+    final digits = sanitized.split('').map(int.parse).toList();
+    final province = int.parse(sanitized.substring(0, 2));
+    if (province < 1 || province > 24) return false;
+
+    final lastDigit = digits[9];
+    int sum = 0;
+    for (var i = 0; i < 9; i++) {
+      final value = digits[i] * (i % 2 == 0 ? 2 : 1);
+      sum += value > 9 ? value - 9 : value;
+    }
+
+    final validator = (10 - (sum % 10)) % 10;
+    return validator == lastDigit;
+  }
+
+  static String? validate(String cedula) {
+    final sanitized = cedula.trim();
+    if (sanitized.isEmpty) return 'La cédula es obligatoria';
+    if (sanitized.length != 10) {
+      return 'Debe tener 10 dígitos (ingresaste ${sanitized.length})';
+    }
+    if (!isValid(sanitized)) return 'Cédula ecuatoriana no válida';
+    return null;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ═════════════════════════════════════════════════════════════════════════════
+class CoordinadorProvincialPanelScreen extends ConsumerStatefulWidget {
+  const CoordinadorProvincialPanelScreen({super.key});
+
+  @override
+  ConsumerState<CoordinadorProvincialPanelScreen> createState() =>
+      _CoordinadorProvincialPanelScreenState();
+}
+
+class _CoordinadorProvincialPanelScreenState
+    extends ConsumerState<CoordinadorProvincialPanelScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabCtrl;
+  String _dignidadFiltro = 'Todos';
+  String? _recintoFiltro; // null = todos los recintos
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final usuario = ref.watch(usuarioActualProvider);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F3F9),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A237E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Coordinador Provincial',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            if (usuario != null)
+              Text('${usuario.nombres} ${usuario.apellidos}',
+                  style: const TextStyle(fontSize: 11, color: Colors.white70)),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_location_alt_outlined, size: 20),
+            tooltip: 'Nuevo recinto',
+            onPressed: () => _dialogCrearRecinto(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_add_outlined, size: 20),
+            tooltip: 'Nuevo coordinador',
+            onPressed: () => _dialogCrearCoordinador(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_outlined, size: 20),
+            onPressed: () async {
+              await ref.read(loginControllerProvider.notifier).logout();
+              if (context.mounted) {
+                Navigator.of(context).pushReplacementNamed('/');
+              }
+            },
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabCtrl,
+          indicatorColor: const Color(0xFF7C83F7),
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white54,
+          labelStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          tabs: const [
+            Tab(icon: Icon(Icons.location_city_outlined, size: 18), text: 'Recintos'),
+            Tab(icon: Icon(Icons.bar_chart_outlined, size: 18), text: 'Dashboard'),
+            Tab(icon: Icon(Icons.people_outline, size: 18), text: 'Coordinadores'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          _TabRecintos(onCrear: () => _dialogCrearRecinto(context)),
+          _TabDashboard(
+            filtroDigidad: _dignidadFiltro,
+            filtroRecinto: _recintoFiltro,
+            onFiltroDigidadChanged: (v) => setState(() => _dignidadFiltro = v),
+            onFiltroRecintoChanged: (v) => setState(() => _recintoFiltro = v),
+          ),
+          const _TabCoordinadores(),
+        ],
+      ),
+    );
+  }
+
+  // ── Diálogo crear recinto ──────────────────────────────────────────────────
+  void _dialogCrearRecinto(BuildContext context) {
+    final ctrlNombre = TextEditingController();
+    final ctrlCanton = TextEditingController();
+    final ctrlParroquia = TextEditingController();
+    final ctrlDireccion = TextEditingController();
+    final ctrlNumJRV = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nuevo recinto electoral',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CampoForm(ctrl: ctrlNombre, label: 'Nombre del recinto'),
+                const SizedBox(height: 10),
+                _CampoForm(ctrl: ctrlCanton, label: 'Cantón'),
+                const SizedBox(height: 10),
+                _CampoForm(ctrl: ctrlParroquia, label: 'Parroquia'),
+                const SizedBox(height: 10),
+                _CampoForm(
+                  ctrl: ctrlNumJRV,
+                  label: 'Número de JRV / mesas',
+                  digitsOnly: true,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Obligatorio';
+                    final n = int.tryParse(v);
+                    if (n == null || n < 1) return 'Debe ser mayor a 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                _CampoForm(
+                  ctrl: ctrlDireccion,
+                  label: 'Dirección (opcional)',
+                  required: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1A237E)),
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                await ref.read(crearRecintoProvider)(
+                  ctrlCanton.text.trim(),
+                  ctrlParroquia.text.trim(),
+                  ctrlNombre.text.trim(),
+                  ctrlDireccion.text.trim().isEmpty
+                      ? null
+                      : ctrlDireccion.text.trim(),
+                  int.parse(ctrlNumJRV.text.trim()), // número de JRV
+                );
+                ref.invalidate(todosLosRecintosProvider);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content: Text('Recinto creado correctamente'),
+                    backgroundColor: Colors.green,
+                  ));
+                }
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ));
+                }
+              }
+            },
+            child: const Text('Crear'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Diálogo crear coordinador de recinto ──────────────────────────────────
+  void _dialogCrearCoordinador(BuildContext context) {
+    final ctrlCedula = TextEditingController();
+    final ctrlNombres = TextEditingController();
+    final ctrlApellidos = TextEditingController();
+    final ctrlTelefono = TextEditingController();
+    final ctrlCorreo = TextEditingController();
+    int? recintoIdSeleccionado;
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final recintosAsync = ref.watch(todosLosRecintosProvider);
+          return AlertDialog(
+            title: const Text('Crear coordinador de recinto',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Cédula con validación ecuatoriana ──
+                    _CampoForm(
+                      ctrl: ctrlCedula,
+                      label: 'Cédula de identidad',
+                      digitsOnly: true,
+                      maxLength: 10,
+                      validator: CedulaValidator.validate,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlNombres,
+                      label: 'Nombres completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los nombres son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlApellidos,
+                      label: 'Apellidos completos',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Los apellidos son obligatorios'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+                    _CampoForm(
+                      ctrl: ctrlTelefono,
+                      label: 'Teléfono de contacto',
+                      digitsOnly: true,
+                      maxLength: 10,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Obligatorio';
+                        if (v.length < 9) return 'Teléfono inválido';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Correo electrónico ──
+                    _CampoForm(
+                      ctrl: ctrlCorreo,
+                      label: 'Correo electrónico',
+                      keyboard: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'El correo es obligatorio';
+                        }
+                        final emailRegex = RegExp(
+                            r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+                        if (!emailRegex.hasMatch(v.trim())) {
+                          return 'Correo electrónico inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // ── Selector de recinto ──
+                    recintosAsync.when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, _) => Text('Error: $e'),
+                      data: (recintos) => DropdownButtonFormField<int>(
+                        value: recintoIdSeleccionado,
+                        hint: const Text('Asignar a recinto'),
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(), isDense: true),
+                        validator: (v) =>
+                            v == null ? 'Selecciona un recinto' : null,
+                        items: recintos
+                            .map((r) => DropdownMenuItem(
+                                  value: r.id,
+                                  child: Text(r.nombre,
+                                      style:
+                                          const TextStyle(fontSize: 13)),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setS(() => recintoIdSeleccionado = v),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Aviso de correo de confirmación
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.mail_outline,
+                              size: 16, color: Color(0xFF2E7D32)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Se enviará un correo de confirmación para activar la cuenta.',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF2E7D32)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar')),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E)),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  try {
+                    await ref.read(crearCoordinadorRecintoProvider)(
+                      ctrlCedula.text.trim(),
+                      ctrlNombres.text.trim(),
+                      ctrlApellidos.text.trim(),
+                      ctrlTelefono.text.trim(),
+                      ctrlCorreo.text.trim(),
+                      recintoIdSeleccionado!,
+                    );
+                    ref.invalidate(coordinadoresRecintoProvider);
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Coordinador creado · Se envió correo de confirmación'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
+                  }
+                },
+                child: const Text('Crear y enviar correo'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 1 — RECINTOS
+// ═════════════════════════════════════════════════════════════════════════════
+class _TabRecintos extends ConsumerWidget {
+  final VoidCallback onCrear;
+  const _TabRecintos({required this.onCrear});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recintosAsync = ref.watch(todosLosRecintosProvider);
+
+    return RefreshIndicator(
+      color: const Color(0xFF1A237E),
+      onRefresh: () async => ref.invalidate(todosLosRecintosProvider),
+      child: recintosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: Colors.red))),
+        data: (recintos) {
+          if (recintos.isEmpty) {
+            return _EmptyState(
+              icono: Icons.location_city_outlined,
+              mensaje: 'Sin recintos registrados',
+              sub: 'Crea el primer recinto electoral.',
+              boton: 'Crear recinto',
+              onTap: onCrear,
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: recintos.length,
+            itemBuilder: (_, i) => _TarjetaRecinto(recinto: recintos[i]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TarjetaRecinto extends ConsumerWidget {
+  final Recinto recinto;
+  const _TarjetaRecinto({required this.recinto});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final resumenAsync = ref.watch(resumenPorRecintoProvider(recinto));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => _DetalleRecintoScreen(recinto: recinto),
+        )),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8EAF6),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_city_outlined,
+                      size: 16, color: Color(0xFF1A237E)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(recinto.nombre,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A237E))),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      size: 16, color: Color(0xFF1A237E)),
+                ],
+              ),
+            ),
+            // Sub-info
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.place_outlined,
+                      size: 13, color: Color(0xFF9E9E9E)),
+                  const SizedBox(width: 4),
+                  Text('${recinto.canton} · ${recinto.parroquia}',
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF757575))),
+                  const Spacer(),
+                  resumenAsync.when(
+                    loading: () => const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                    error: (_, __) => const SizedBox(),
+                    data: (r) => _PillAvance(resumen: r),
+                  ),
+                ],
+              ),
+            ),
+            // Barra de progreso
+            resumenAsync.when(
+              loading: () => const SizedBox(),
+              error: (_, __) => const SizedBox(),
+              data: (r) => r.totalMesas == 0
+                  ? const SizedBox()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: r.porcentaje,
+                              minHeight: 6,
+                              backgroundColor: const Color(0xFFE8EAF6),
+                              color: r.porcentaje == 1
+                                  ? Colors.green
+                                  : const Color(0xFF3949AB),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${r.totalActas} / ${r.totalMesas * 2} actas · ${r.totalMesas} mesas',
+                            style: const TextStyle(
+                                fontSize: 10, color: Color(0xFF9E9E9E)),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PillAvance extends StatelessWidget {
+  final ResumenRecintoProv resumen;
+  const _PillAvance({required this.resumen});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = resumen.pendientes == 0
+        ? Colors.green.shade600
+        : resumen.porcentaje > 0.5
+            ? Colors.blue.shade600
+            : Colors.orange.shade700;
+    final bg = resumen.pendientes == 0
+        ? Colors.green.shade50
+        : resumen.porcentaje > 0.5
+            ? Colors.blue.shade50
+            : Colors.orange.shade50;
+    final label = resumen.pendientes == 0
+        ? 'Completo'
+        : '${resumen.pendientes} pendientes';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+    );
+  }
+}
+
+// ─── Detalle de un recinto ────────────────────────────────────────────────────
+class _DetalleRecintoScreen extends ConsumerWidget {
+  final Recinto recinto;
+  const _DetalleRecintoScreen({required this.recinto});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actasAsync = ref.watch(actasDeRecintoProvider(recinto.id));
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F3F9),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A237E),
+        foregroundColor: Colors.white,
+        title: Text(recinto.nombre,
+            style:
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_outlined, size: 20),
+            onPressed: () =>
+                ref.invalidate(actasDeRecintoProvider(recinto.id)),
+          ),
+        ],
+      ),
+      body: actasAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: Colors.red))),
+        data: (actas) {
+          if (actas.isEmpty) {
+            return const Center(
+              child: Text('Sin actas registradas en este recinto.',
+                  style: TextStyle(color: Color(0xFF9E9E9E))),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: actas.length,
+            itemBuilder: (_, i) => _TarjetaActaDetalle(acta: actas[i]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TarjetaActaDetalle extends StatelessWidget {
+  final Acta acta;
+  const _TarjetaActaDetalle({required this.acta});
+
+  @override
+  Widget build(BuildContext context) {
+    final tieneGps = acta.gpsLat != null && acta.gpsLng != null;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _BadgeEstado(acta: acta),
+              const SizedBox(width: 8),
+              Text(
+                acta.dignidad == Dignidad.alcalde
+                    ? 'Acta de Alcalde'
+                    : 'Acta de Prefecto',
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text('Mesa ${acta.mesaId}',
+                  style: const TextStyle(
+                      fontSize: 11, color: Color(0xFF9E9E9E))),
+            ],
+          ),
+          if (tieneGps) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined,
+                      size: 14, color: Color(0xFF2E7D32)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'GPS: ${acta.gpsLat!.toStringAsFixed(6)}, ${acta.gpsLng!.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF2E7D32)),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_off_outlined,
+                      size: 14, color: Colors.orange.shade700),
+                  const SizedBox(width: 6),
+                  Text('Sin coordenadas GPS',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.orange.shade700)),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text('Registrada: ${_formatFecha(acta.createdAt)}',
+              style: const TextStyle(
+                  fontSize: 11, color: Color(0xFF9E9E9E))),
+        ],
+      ),
+    );
+  }
+
+  String _formatFecha(DateTime? dt) {
+    if (dt == null) return '—';
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/'
+        '${dt.year}  '
+        '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _BadgeEstado extends StatelessWidget {
+  final Acta acta;
+  const _BadgeEstado({required this.acta});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (acta.estado) {
+      EstadoActa.ingresada =>
+        _pill('Ingresada', Colors.blue.shade700, Colors.blue.shade50),
+      EstadoActa.revisada =>
+        _pill('Revisada', Colors.green.shade700, Colors.green.shade50),
+      EstadoActa.conNovedad =>
+        _pill('Con novedad', Colors.red.shade700, Colors.red.shade50),
+    };
+  }
+
+  Widget _pill(String label, Color color, Color bg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.w500)),
+      );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 2 — DASHBOARD DE VOTOS (con filtro por recinto)
+// ═════════════════════════════════════════════════════════════════════════════
+class _TabDashboard extends ConsumerWidget {
+  final String filtroDigidad;
+  final String? filtroRecinto;
+  final ValueChanged<String> onFiltroDigidadChanged;
+  final ValueChanged<String?> onFiltroRecintoChanged;
+
+  const _TabDashboard({
+    required this.filtroDigidad,
+    required this.filtroRecinto,
+    required this.onFiltroDigidadChanged,
+    required this.onFiltroRecintoChanged,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final votosAsync = ref.watch(dashboardVotosProvider);
+    final recintosAsync = ref.watch(todosLosRecintosProvider);
+
+    return RefreshIndicator(
+      color: const Color(0xFF1A237E),
+      onRefresh: () async => ref.invalidate(dashboardVotosProvider),
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          // ── Filtro por recinto ──
+          recintosAsync.when(
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
+            data: (recintos) => _SelectorRecinto(
+              recintos: recintos,
+              seleccionado: filtroRecinto,
+              onChanged: onFiltroRecintoChanged,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ── Filtro por dignidad ──
+          _SelectorDignidad(
+              valor: filtroDigidad, onChanged: onFiltroDigidadChanged),
+          const SizedBox(height: 12),
+
+          votosAsync.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+                child: Text('Error: $e',
+                    style: const TextStyle(color: Colors.red))),
+            data: (votos) {
+              // Filtrar por recinto si aplica
+              var filtrados = filtroRecinto != null
+                  ? votos
+                      .where((v) => v.recintoNombre == filtroRecinto)
+                      .toList()
+                  : votos;
+
+              // Filtrar por dignidad
+              filtrados = filtroDigidad == 'Todos'
+                  ? filtrados
+                  : filtrados
+                      .where((v) => v.dignidad == filtroDigidad)
+                      .toList();
+
+              if (filtrados.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: Text('Sin votos registrados aún.',
+                        style: TextStyle(color: Color(0xFF9E9E9E))),
+                  ),
+                );
+              }
+
+              // Encabezado del resumen
+              final totalVotos = filtrados.fold<int>(
+                  0, (acc, v) => acc + v.totalVotos);
+              final maxVotos =
+                  filtrados.isEmpty ? 1 : filtrados.first.totalVotos;
+
+              return Column(
+                children: [
+                  // Tarjeta resumen total
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A237E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.how_to_vote_outlined,
+                            color: Colors.white70, size: 20),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              filtroRecinto ?? 'Todos los recintos',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.white70),
+                            ),
+                            Text(
+                              '$totalVotos votos totales',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...filtrados.asMap().entries.map((e) => _BarraCandidato(
+                        posicion: e.key + 1,
+                        datos: e.value,
+                        maxVotos: maxVotos,
+                      )),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Selector de recinto para el dashboard ────────────────────────────────────
+class _SelectorRecinto extends StatelessWidget {
+  final List<Recinto> recintos;
+  final String? seleccionado;
+  final ValueChanged<String?> onChanged;
+
+  const _SelectorRecinto({
+    required this.recintos,
+    required this.seleccionado,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String?>(
+          value: seleccionado,
+          isExpanded: true,
+          hint: const Text('Todos los recintos',
+              style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
+          icon: const Icon(Icons.filter_list_outlined,
+              size: 18, color: Color(0xFF1A237E)),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('Todos los recintos',
+                  style: TextStyle(fontSize: 13)),
+            ),
+            ...recintos.map((r) => DropdownMenuItem<String?>(
+                  value: r.nombre,
+                  child:
+                      Text(r.nombre, style: const TextStyle(fontSize: 13)),
+                )),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectorDignidad extends StatelessWidget {
+  final String valor;
+  final ValueChanged<String> onChanged;
+  const _SelectorDignidad(
+      {required this.valor, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Row(
+        children: ['Todos', 'Alcalde', 'Prefecto'].map((d) {
+          final sel = valor == d;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(d),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? const Color(0xFF1A237E)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  d,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        sel ? Colors.white : const Color(0xFF757575),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _BarraCandidato extends StatelessWidget {
+  final int posicion;
+  final VotosCandidato datos;
+  final int maxVotos;
+
+  const _BarraCandidato({
+    required this.posicion,
+    required this.datos,
+    required this.maxVotos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final porcentaje =
+        maxVotos == 0 ? 0.0 : datos.totalVotos / maxVotos;
+    final esPrimero = posicion == 1;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: esPrimero
+              ? const Color(0xFF3949AB).withOpacity(0.4)
+              : const Color(0xFFE0E0E0),
+          width: esPrimero ? 1.5 : 0.5,
+        ),
+        boxShadow: esPrimero
+            ? [
+                BoxShadow(
+                    color: const Color(0xFF1A237E).withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3)),
+              ]
+            : [],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _NumeroPosicion(pos: posicion),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(datos.nombre,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF212121))),
+                    Text(
+                      '${datos.organizacion} · ${datos.dignidad}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF9E9E9E)),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${datos.totalVotos}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: esPrimero
+                      ? const Color(0xFF1A237E)
+                      : const Color(0xFF424242),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: porcentaje,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE8EAF6),
+              color: esPrimero
+                  ? const Color(0xFF3949AB)
+                  : const Color(0xFF9E9E9E),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NumeroPosicion extends StatelessWidget {
+  final int pos;
+  const _NumeroPosicion({required this.pos});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = {
+      1: [const Color(0xFFFFD700), const Color(0xFF8B6914)],
+      2: [const Color(0xFFE8E8E8), const Color(0xFF616161)],
+      3: [const Color(0xFFCD7F32), const Color(0xFF5D4037)],
+    };
+    final c = colors[pos] ??
+        [const Color(0xFFF5F5F5), const Color(0xFF9E9E9E)];
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(color: c[0], shape: BoxShape.circle),
+      child: Center(
+        child: Text('$pos',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: c[1])),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 3 — COORDINADORES DE RECINTO
+// ═════════════════════════════════════════════════════════════════════════════
+class _TabCoordinadores extends ConsumerWidget {
+  const _TabCoordinadores();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coordsAsync = ref.watch(coordinadoresRecintoProvider);
+
+    return RefreshIndicator(
+      color: const Color(0xFF1A237E),
+      onRefresh: () async => ref.invalidate(coordinadoresRecintoProvider),
+      child: coordsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: Colors.red))),
+        data: (coords) {
+          if (coords.isEmpty) {
+            return const _EmptyState(
+              icono: Icons.people_outline,
+              mensaje: 'Sin coordinadores registrados',
+              sub: 'Crea coordinadores desde el botón superior.',
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: coords.length,
+            itemBuilder: (_, i) {
+              final c = coords[i];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: const Color(0xFFE0E0E0), width: 0.5),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFE8EAF6),
+                      child: Text(
+                        c.nombres.isNotEmpty
+                            ? c.nombres[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                            color: Color(0xFF1A237E),
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${c.nombres} ${c.apellidos}',
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600)),
+                          Text(c.cedula,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF9E9E9E))),
+                          if (c.correo != null)
+                            Text(c.correo!,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF9E9E9E))),
+                        ],
+                      ),
+                    ),
+                    if (c.recintoId != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8EAF6),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text('Recinto ${c.recintoId}',
+                            style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF1A237E),
+                                fontWeight: FontWeight.w500)),
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Widgets auxiliares
+// ═════════════════════════════════════════════════════════════════════════════
+class _EmptyState extends StatelessWidget {
+  final IconData icono;
+  final String mensaje;
+  final String sub;
+  final String? boton;
+  final VoidCallback? onTap;
+
+  const _EmptyState({
+    required this.icono,
+    required this.mensaje,
+    required this.sub,
+    this.boton,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icono, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(mensaje,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600)),
+            const SizedBox(height: 8),
+            Text(sub,
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade500)),
+            if (boton != null && onTap != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.add),
+                label: Text(boton!),
+                style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Campo de formulario con validación integrada ──────────────────────────────
+class _CampoForm extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final bool digitsOnly;
+  final int? maxLength;
+  final bool required;
+  final String? Function(String?)? validator;
+  final TextInputType? keyboard;
+
+  const _CampoForm({
+    required this.ctrl,
+    required this.label,
+    this.digitsOnly = false,
+    this.maxLength,
+    this.required = true,
+    this.validator,
+    this.keyboard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: keyboard ??
+          (digitsOnly ? TextInputType.number : TextInputType.text),
+      inputFormatters: [
+        if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
+        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+      ],
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
+      validator: validator ??
+          (required
+              ? (v) => (v == null || v.trim().isEmpty)
+                  ? '$label es obligatorio'
+                  : null
+              : null),
+    );
+  }
+}
 
           
 ================================================
 📄 ARCHIVO: lib/features/auth/presentation/coordinador_provincial/coordinador_provincial_providers.dart
 ================================================
 
+// lib/features/auth/presentation/coordinador_provincial/coordinador_provincial_providers.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/supabase_constants.dart';
+import '../../data/datasources/supabase_client_provider.dart';
+import '../../data/models/mesa_jrv_model.dart';
+import '../../data/models/recinto_model.dart';
+import '../../data/models/usuario_model.dart';
+import '../../data/models/acta_model.dart';
+import '../../domain/entities/mesa_jrv.dart';
+import '../../domain/entities/recinto.dart';
+import '../../domain/entities/usuario.dart';
+import '../../domain/entities/acta.dart';
 
+// ─── Todos los recintos ───────────────────────────────────────────────────────
+final todosLosRecintosProvider = FutureProvider<List<Recinto>>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase
+      .from(SupabaseConstants.recintosTable)
+      .select()
+      .order('nombre');
+  return (res as List)
+      .map((r) => RecintoModel.fromMap(r as Map<String, dynamic>))
+      .toList();
+});
+
+// ─── Resumen de avance por recinto ───────────────────────────────────────────
+class ResumenRecintoProv {
+  final Recinto recinto;
+  final int totalMesas;
+  final int actasAlcalde;
+  final int actasPrefecto;
+
+  const ResumenRecintoProv({
+    required this.recinto,
+    required this.totalMesas,
+    required this.actasAlcalde,
+    required this.actasPrefecto,
+  });
+
+  int get totalActas => actasAlcalde + actasPrefecto;
+  int get pendientes => (totalMesas * 2) - totalActas;
+  double get porcentaje =>
+      totalMesas == 0 ? 0 : totalActas / (totalMesas * 2);
+}
+
+final resumenPorRecintoProvider =
+    FutureProvider.family<ResumenRecintoProv, Recinto>((ref, recinto) async {
+  final supabase = ref.watch(supabaseClientProvider);
+
+  // Mesas del recinto
+  final mesasRes = await supabase
+      .from(SupabaseConstants.mesasJrvTable)
+      .select('id')
+      .eq('recinto_id', recinto.id);
+  final mesaIds = (mesasRes as List).map((r) => r['id'] as int).toList();
+
+  if (mesaIds.isEmpty) {
+    return ResumenRecintoProv(
+      recinto: recinto,
+      totalMesas: 0,
+      actasAlcalde: 0,
+      actasPrefecto: 0,
+    );
+  }
+
+  final actasRes = await supabase
+      .from(SupabaseConstants.actasTable)
+      .select('dignidad')
+      .inFilter('mesa_id', mesaIds);
+
+  int alcalde = 0, prefecto = 0;
+  for (final row in actasRes as List) {
+    final d = row['dignidad'] as String?;
+    if (d == 'Alcalde') alcalde++;
+    if (d == 'Prefecto') prefecto++;
+  }
+
+  return ResumenRecintoProv(
+    recinto: recinto,
+    totalMesas: mesaIds.length,
+    actasAlcalde: alcalde,
+    actasPrefecto: prefecto,
+  );
+});
+
+// ─── Detalle de actas de un recinto (con GPS) ────────────────────────────────
+final actasDeRecintoProvider =
+    FutureProvider.family<List<Acta>, int>((ref, recintoId) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final mesasRes = await supabase
+      .from(SupabaseConstants.mesasJrvTable)
+      .select('id')
+      .eq('recinto_id', recintoId);
+  final mesaIds =
+      (mesasRes as List).map((r) => r['id'] as int).toList();
+  if (mesaIds.isEmpty) return [];
+
+  final res = await supabase
+      .from(SupabaseConstants.actasTable)
+      .select()
+      .inFilter('mesa_id', mesaIds)
+      .order('created_at', ascending: false);
+  return (res as List)
+      .map((r) => ActaModel.fromMap(r as Map<String, dynamic>))
+      .toList();
+});
+
+// ─── Dashboard: votos consolidados por candidato ─────────────────────────────
+class VotosCandidato {
+  final int candidatoId;
+  final String nombre;
+  final String dignidad;
+  final String organizacion;
+  final int totalVotos;
+
+  const VotosCandidato({
+    required this.candidatoId,
+    required this.nombre,
+    required this.dignidad,
+    required this.organizacion,
+    required this.totalVotos,
+  });
+}
+
+final dashboardVotosProvider =
+    FutureProvider<List<VotosCandidato>>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  // Join votos_candidatos → candidatos → organizaciones_politicas
+  final res = await supabase.from('votos_candidatos').select('''
+    candidato_id,
+    cantidad_votos,
+    candidatos!inner(
+      nombre,
+      dignidad,
+      organizaciones_politicas!inner(nombre)
+    )
+  ''');
+
+  // Agrupar por candidato_id sumando votos
+  final Map<int, VotosCandidato> mapa = {};
+  for (final row in res as List) {
+    final cid = row['candidato_id'] as int;
+    final votos = row['cantidad_votos'] as int;
+    final cand = row['candidatos'] as Map<String, dynamic>;
+    final org = cand['organizaciones_politicas'] as Map<String, dynamic>;
+
+    if (mapa.containsKey(cid)) {
+      mapa[cid] = VotosCandidato(
+        candidatoId: cid,
+        nombre: mapa[cid]!.nombre,
+        dignidad: mapa[cid]!.dignidad,
+        organizacion: mapa[cid]!.organizacion,
+        totalVotos: mapa[cid]!.totalVotos + votos,
+      );
+    } else {
+      mapa[cid] = VotosCandidato(
+        candidatoId: cid,
+        nombre: cand['nombre'] as String,
+        dignidad: cand['dignidad'] as String,
+        organizacion: org['nombre'] as String,
+        totalVotos: votos,
+      );
+    }
+  }
+
+  final lista = mapa.values.toList()
+    ..sort((a, b) => b.totalVotos.compareTo(a.totalVotos));
+  return lista;
+});
+
+// ─── Mesas de un recinto (para detalles) ────────────────────────────────────
+final mesasDeRecintoProvProv =
+    FutureProvider.family<List<MesaJrv>, int>((ref, recintoId) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase
+      .from(SupabaseConstants.mesasJrvTable)
+      .select()
+      .eq('recinto_id', recintoId)
+      .order('numero_mesa');
+  return (res as List)
+      .map((r) => MesaJrvModel.fromMap(r as Map<String, dynamic>))
+      .toList();
+});
+
+// ─── Crear recinto ────────────────────────────────────────────────────────────
+final crearRecintoProvider =
+    Provider<Future<Recinto> Function(String canton, String parroquia,
+        String nombre, String? direccion)>((ref) {
+  return (canton, parroquia, nombre, direccion) async {
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase
+        .from(SupabaseConstants.recintosTable)
+        .insert({
+          'canton': canton,
+          'parroquia': parroquia,
+          'nombre': nombre,
+          'provincia': 'Ecuador', // ajusta según tu lógica
+          if (direccion != null) 'direccion': direccion,
+        })
+        .select()
+        .single();
+    return RecintoModel.fromMap(res as Map<String, dynamic>);
+  };
+});
+
+// ─── Crear coordinador de recinto ────────────────────────────────────────────
+final crearCoordinadorRecintoProvider =
+    Provider<Future<void> Function(String cedula, String nombres,
+        String apellidos, String telefono, int recintoId)>((ref) {
+  return (cedula, nombres, apellidos, telefono, recintoId) async {
+    final supabase = ref.read(supabaseClientProvider);
+    await supabase.functions.invoke('crear-usuario', body: {
+      'cedula': cedula,
+      'nombres': nombres,
+      'apellidos': apellidos,
+      'telefono': telefono,
+      'rol': 'coordinador_recinto',
+      'recinto_id': recintoId,
+    });
+  };
+});
+
+// ─── Coordinadores de recinto ─────────────────────────────────────────────────
+final coordinadoresRecintoProvider =
+    FutureProvider<List<Usuario>>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase
+      .from('usuarios')
+      .select()
+      .eq('rol', 'coordinador_recinto')
+      .order('nombre');
+  return (res as List)
+      .map((r) =>
+          UsuarioModel.fromMap(r as Map<String, dynamic>, correo: ''))
+      .toList();
+});
 
           
 ================================================
@@ -5100,6 +6667,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/acta.dart';
 import '../../domain/entities/mesa_jrv.dart';
+import '../../domain/entities/organizacion_politica.dart';
 import '../../domain/entities/usuario.dart';
 import '../controller/login_controller.dart';
 import '../veedor/acta_form_screen.dart';
@@ -5120,7 +6688,9 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
     final recintoId = usuario.recintoId;
     if (recintoId == null) {
       return const Scaffold(
-        body: Center(child: Text('Sin recinto asignado. Contacta al coordinador provincial.')),
+        body: Center(
+            child: Text(
+                'Sin recinto asignado. Contacta al coordinador provincial.')),
       );
     }
 
@@ -5146,7 +6716,8 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.person_add_outlined, size: 20),
             tooltip: 'Crear veedor',
-            onPressed: () => _mostrarDialogoCrearVeedor(context, ref, recintoId),
+            onPressed: () =>
+                _mostrarDialogoCrearVeedor(context, ref, recintoId),
           ),
           IconButton(
             icon: const Icon(Icons.add_road_outlined, size: 20),
@@ -5157,7 +6728,8 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout_outlined, size: 20),
             onPressed: () async {
               await ref.read(loginControllerProvider.notifier).logout();
-              if (context.mounted) Navigator.of(context).pushReplacementNamed('/');
+              if (context.mounted)
+                Navigator.of(context).pushReplacementNamed('/');
             },
           ),
         ],
@@ -5181,8 +6753,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
 
             // Lista de mesas
             mesasAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text('Error: $e',
                     style: const TextStyle(color: Colors.red)),
@@ -5246,8 +6817,8 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
               ...GeneroMesa.values.map((g) => RadioListTile<GeneroMesa>(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(g.dbValue,
-                        style: const TextStyle(fontSize: 13)),
+                    title:
+                        Text(g.dbValue, style: const TextStyle(fontSize: 13)),
                     value: g,
                     groupValue: generoSeleccionado,
                     onChanged: (v) => setS(() => generoSeleccionado = v!),
@@ -5273,7 +6844,8 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                 } catch (e) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text('Error: $e'),
+                      SnackBar(
+                          content: Text('Error: $e'),
                           backgroundColor: Colors.red),
                     );
                   }
@@ -5308,13 +6880,18 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _CampoTexto(ctrl: ctrlCedula, label: 'Cédula', digitsOnly: true, maxLength: 10),
+                  _CampoTexto(
+                      ctrl: ctrlCedula,
+                      label: 'Cédula',
+                      digitsOnly: true,
+                      maxLength: 10),
                   const SizedBox(height: 10),
                   _CampoTexto(ctrl: ctrlNombres, label: 'Nombres'),
                   const SizedBox(height: 10),
                   _CampoTexto(ctrl: ctrlApellidos, label: 'Apellidos'),
                   const SizedBox(height: 10),
-                  _CampoTexto(ctrl: ctrlTelefono, label: 'Teléfono', digitsOnly: true),
+                  _CampoTexto(
+                      ctrl: ctrlTelefono, label: 'Teléfono', digitsOnly: true),
                   const SizedBox(height: 10),
                   mesasAsync.when(
                     loading: () => const CircularProgressIndicator(),
@@ -5456,7 +7033,9 @@ class _Stat extends StatelessWidget {
 class _Div extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-      width: 1, height: 36, color: Colors.white24,
+      width: 1,
+      height: 36,
+      color: Colors.white24,
       margin: const EdgeInsets.symmetric(horizontal: 6));
 }
 
@@ -5470,7 +7049,8 @@ class _BannerCargando extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Center(
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+            child:
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
       );
 }
 
@@ -5521,8 +7101,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: const BoxDecoration(
               color: Color(0xFFE8F5E9),
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
@@ -5541,8 +7120,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                 ),
                 // Botón reasignar veedor
                 GestureDetector(
-                  onTap: () =>
-                      _mostrarReasignar(context, ref, mesa),
+                  onTap: () => _mostrarReasignar(context, ref, mesa),
                   child: const Icon(Icons.swap_horiz,
                       size: 18, color: Color(0xFF1B5E20)),
                 ),
@@ -5562,10 +7140,12 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                   style: const TextStyle(color: Colors.red, fontSize: 12)),
             ),
             data: (actas) {
-              final actaAlcalde =
-                  actas.where((a) => a.dignidad == Dignidad.alcalde).firstOrNull;
-              final actaPrefecto =
-                  actas.where((a) => a.dignidad == Dignidad.prefecto).firstOrNull;
+              final actaAlcalde = actas
+                  .where((a) => a.dignidad == Dignidad.alcalde)
+                  .firstOrNull;
+              final actaPrefecto = actas
+                  .where((a) => a.dignidad == Dignidad.prefecto)
+                  .firstOrNull;
 
               return Column(
                 children: [
@@ -5576,9 +7156,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                         context, ref, Dignidad.alcalde, actaAlcalde),
                   ),
                   Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: Colors.grey.shade200),
+                      height: 1, thickness: 0.5, color: Colors.grey.shade200),
                   _FilaActaCoordinador(
                     etiqueta: 'Acta de Prefecto',
                     acta: actaPrefecto,
@@ -5596,9 +7174,9 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
 
   Future<void> _irAFormulario(BuildContext context, WidgetRef ref,
       Dignidad dignidad, Acta? actaExistente) async {
-    final orgsAsync =
-        ref.read(organizacionesPorDignidadProvider(dignidad));
-    final orgs = orgsAsync.maybeWhen(data: (d) => d, orElse: () => []);
+    final orgsAsync = ref.read(organizacionesPorDignidadProvider(dignidad));
+    final orgs = orgsAsync.maybeWhen(
+        data: (d) => d, orElse: () => <OrganizacionPolitica>[]);
 
     if (!context.mounted) return;
     await Navigator.of(context).push(
@@ -5618,8 +7196,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
     ref.invalidate(actasDeMesaProvider(mesa.id));
   }
 
-  void _mostrarReasignar(
-      BuildContext context, WidgetRef ref, MesaJrv mesa) {
+  void _mostrarReasignar(BuildContext context, WidgetRef ref, MesaJrv mesa) {
     // Cargar veedores del recinto para mostrarlos en el dropdown
     showDialog(
       context: context,
@@ -5649,7 +7226,9 @@ class _FilaActaCoordinador extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              registrada ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+              registrada
+                  ? Icons.check_circle_outline
+                  : Icons.radio_button_unchecked,
               size: 18,
               color: registrada ? Colors.green.shade600 : Colors.grey.shade400,
             ),
@@ -5664,8 +7243,8 @@ class _FilaActaCoordinador extends StatelessWidget {
                   if (acta?.gpsLat != null)
                     Text(
                       'GPS: ${acta!.gpsLat!.toStringAsFixed(5)}, ${acta!.gpsLng!.toStringAsFixed(5)}',
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.grey.shade500),
+                      style:
+                          TextStyle(fontSize: 10, color: Colors.grey.shade500),
                     ),
                 ],
               ),
@@ -5695,17 +7274,16 @@ class _BadgeEstadoActa extends StatelessWidget {
           Colors.orange.shade200);
     }
     return switch (acta!.estado) {
-      EstadoActa.ingresada =>
-        _badge('Ingresada', Colors.blue.shade700, Colors.blue.shade50, Colors.blue.shade200),
-      EstadoActa.revisada =>
-        _badge('Revisada', Colors.green.shade700, Colors.green.shade50, Colors.green.shade200),
-      EstadoActa.conNovedad =>
-        _badge('Con novedad', Colors.red.shade700, Colors.red.shade50, Colors.red.shade200),
+      EstadoActa.ingresada => _badge('Ingresada', Colors.blue.shade700,
+          Colors.blue.shade50, Colors.blue.shade200),
+      EstadoActa.revisada => _badge('Revisada', Colors.green.shade700,
+          Colors.green.shade50, Colors.green.shade200),
+      EstadoActa.conNovedad => _badge('Con novedad', Colors.red.shade700,
+          Colors.red.shade50, Colors.red.shade200),
     };
   }
 
-  Widget _badge(String label, Color color, Color bg, Color border) =>
-      Container(
+  Widget _badge(String label, Color color, Color bg, Color border) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
@@ -5749,8 +7327,7 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
         error: (e, _) => Text('Error: $e'),
         data: (veedores) {
           if (veedores.isEmpty) {
-            return const Text(
-                'No hay veedores disponibles en este recinto.',
+            return const Text('No hay veedores disponibles en este recinto.',
                 style: TextStyle(fontSize: 13));
           }
           return DropdownButtonFormField<String>(
@@ -5761,8 +7338,7 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
             items: veedores
                 .map((v) => DropdownMenuItem(
                       value: v.id,
-                      child: Text(
-                          '${v.nombres} ${v.apellidos}',
+                      child: Text('${v.nombres} ${v.apellidos}',
                           style: const TextStyle(fontSize: 13)),
                     ))
                 .toList(),
@@ -5775,8 +7351,8 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar')),
         FilledButton(
-          style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1B5E20)),
+          style:
+              FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20)),
           onPressed: _veedorSeleccionado == null
               ? null
               : () async {
@@ -5879,6 +7455,7 @@ class _CampoTexto extends StatelessWidget {
   }
 }
 
+
           
 ================================================
 📄 ARCHIVO: lib/main.dart
@@ -5894,6 +7471,9 @@ import 'features/auth/domain/entities/usuario.dart';
 import 'features/auth/presentation/controller/login_controller.dart';
 import 'features/auth/presentation/veedor/veedor_panel_screen.dart';
 import 'features/auth/presentation/auth/olvide_password_screen.dart';
+import 'features/auth/presentation/auth/cambiar_password_screen.dart';
+import 'features/auth/presentation/coordinador_provincial/coordinador_provincial_panel_screen.dart';
+import 'features/auth/presentation/coordinador_recinto/coordinador_recinto_panel_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -5921,8 +7501,10 @@ class ControlElectoralApp extends StatelessWidget {
         // ─── REGISTRO DE RUTAS NOMBRADAS ─────────────────────────────────────
         routes: {
           '/veedor': (_) => const VeedorPanelScreen(),
-          // 2. CONEXIÓN DIRECTA: Mapeamos la ruta exacta que llama el LoginScreen
           '/olvide-password': (_) => const OlvidePasswordScreen(),
+          '/cambiar-password': (_) => const CambiarPasswordScreen(),
+          '/provincial': (_) => const CoordinadorProvincialPanelScreen(),
+          '/coordinador-recinto': (_) => const CoordinadorRecintoPanelScreen(),
         },
       ),
     );
@@ -6427,16 +8009,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     if (error.contains('Cédula inválida')) {
       return 'Cédula inválida. Verifica el número.';
     }
-    if (error.contains('Invalid credentials')) {
+    if (error.contains('Invalid login credentials')) {
       return 'Cédula o contraseña incorrectos.';
     }
     if (error.contains('rate_limit')) {
       return 'Demasiados intentos. Espera un momento.';
     }
-    if (error.contains('No se encontró un perfil')) {
+    if (error.contains('no registrado') || error.contains('not found')) {
       return 'Usuario no registrado en el sistema.';
     }
-    return 'Error al ingresar. Intenta de nuevo.';
+    if (error.contains('Email not confirmed')) {
+      return 'Correo electrónico no confirmado. Revisa tu bandeja de entrada.';
+    }
+    return error; // muestra el error real para depuración
   }
 }
 

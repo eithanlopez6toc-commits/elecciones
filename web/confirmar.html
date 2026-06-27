@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmando cuenta · Control Electoral</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #F8F9FC;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #E4E7EC;
+      padding: 40px 32px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #E4E7EC;
+    }
+    .header span { color: #3422CD; font-size: 18px; font-weight: bold; }
+    .icon {
+      width: 64px; height: 64px;
+      background: #E8E7FF;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 24px;
+    }
+    h1 { color: #101828; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+    p { color: #475467; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+    .btn {
+      display: inline-block;
+      background: #2B1CB1;
+      color: white;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      width: 100%;
+    }
+    .btn-outline {
+      display: inline-block;
+      background: transparent;
+      color: #344054;
+      border: 1px solid #D0D5DD;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      width: 100%;
+    }
+    .info {
+      background: #D1FADF;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 24px;
+      text-align: left;
+    }
+    .info p { color: #065F46; font-size: 12px; margin: 0; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #E8E7FF;
+      border-top: 3px solid #3422CD;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none; }
+    footer { margin-top: 32px; color: #98A2B3; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span>🗳️ Control Electoral</span>
+    </div>
+
+    <!-- Estado: cargando -->
+    <div id="estado-cargando">
+      <div class="spinner"></div>
+      <h1>Confirmando tu cuenta...</h1>
+      <p>Estamos verificando tu información, un momento.</p>
+    </div>
+
+    <!-- Estado: éxito -->
+    <div id="estado-exito" class="hidden">
+      <div class="icon">✅</div>
+      <h1>¡Cuenta confirmada!</h1>
+      <p>Tu cuenta ha sido activada exitosamente.<br>
+         Tu contraseña inicial es <strong style="color:#3422CD;">Ecuador2026</strong><br>
+         Se te pedirá cambiarla al iniciar sesión.</p>
+      <a id="btn-app" href="#" class="btn">📱 Abrir la aplicación</a>
+      <div class="info">
+        <p>🔒 Si la app no abre automáticamente, asegúrate de tenerla instalada en tu dispositivo móvil.</p>
+      </div>
+    </div>
+
+    <!-- Estado: error -->
+    <div id="estado-error" class="hidden">
+      <div class="icon">❌</div>
+      <h1>Enlace inválido</h1>
+      <p>Este enlace ya fue usado o expiró.<br>Contacta al administrador del sistema.</p>
+    </div>
+
+    <footer>© 2026 Control Electoral · Sistema Oficial</footer>
+  </div>
+
+  <script>
+    // ── Soporta DOS formatos que puede usar Supabase ──
+    // 1. Flujo PKCE (nuevo, el que usa este proyecto): ?code=xxxxx
+    // 2. Flujo implícito (viejo): #access_token=xxx&type=invite
+
+    const queryParams = new URLSearchParams(window.location.search);
+    const code = queryParams.get('code');
+
+    const fragment = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(fragment);
+    const accessToken = hashParams.get('access_token');
+
+    function mostrar(id) {
+      ['estado-cargando', 'estado-exito', 'estado-error'].forEach(i => {
+        document.getElementById(i).classList.add('hidden');
+      });
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    let deepLink = null;
+
+    if (code) {
+      // Flujo PKCE: mandamos el code y le decimos a la app que es tipo "invite"
+      deepLink = `io.supabase.elecciones://confirmar?code=${encodeURIComponent(code)}&type=invite`;
+    } else if (accessToken) {
+      // Flujo implícito viejo
+      deepLink = `io.supabase.elecciones://confirmar#${fragment}`;
+    }
+
+    if (deepLink) {
+      document.getElementById('btn-app').href = deepLink;
+
+      // Intentar abrir la app automáticamente
+      setTimeout(() => {
+        window.location.href = deepLink;
+      }, 800);
+
+      mostrar('estado-exito');
+    } else {
+      mostrar('estado-error');
+    }
+  </script>
+</body>
+</html>
