@@ -8,6 +8,26 @@ import '../controller/login_controller.dart';
 import 'coordinador_provincial_providers.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM — Portal Electoral Seguro
+// ═════════════════════════════════════════════════════════════════════════════
+class _Tema {
+  static const primary = Color(0xFF003EC7);
+  static const outline = Color(0xFFE2E8F0);
+  static const cardRadius = 12.0;
+  static const background = Color(0xFFF7F8FA);
+  static const onSurface = Color(0xFF0F172A);
+  static const onSurfaceVariant = Color(0xFF475569);
+  static const greyLight = Color(0xFF94A3B8);
+  static const success = Color(0xFF10B981);
+  static const successContainer = Color(0xFFECFDF5);
+  static const errorColor = Color(0xFFEF4444);
+  static const errorContainer = Color(0xFFFEF2F2);
+  static const warningColor = Color(0xFFF59E0B);
+  static const warningContainer = Color(0xFFFFFBEB);
+  static const brandAccent = Color(0xFFEFF6FF);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // VALIDADOR DE CÉDULA ECUATORIANA
 // ═════════════════════════════════════════════════════════════════════════════
 class CedulaValidator {
@@ -58,7 +78,7 @@ class _CoordinadorProvincialPanelScreenState
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   String _dignidadFiltro = 'Todos';
-  String? _recintoFiltro; // null = todos los recintos
+  String? _recintoFiltro;
 
   @override
   void initState() {
@@ -77,34 +97,41 @@ class _CoordinadorProvincialPanelScreenState
     final usuario = ref.watch(usuarioActualProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F9),
+      backgroundColor: _Tema.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: _Tema.primary,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: _Tema.outline, height: 1.0),
+        ),
+        title: Row(
           children: [
-            const Text('Coordinador Provincial',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            if (usuario != null)
-              Text('${usuario.nombres} ${usuario.apellidos}',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70)),
+            const Icon(Icons.shield_outlined, color: _Tema.primary, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Portal Electoral Seguro',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _Tema.primary)),
+                  if (usuario != null)
+                    Text('Coordinador: ${usuario.nombres} ${usuario.apellidos}',
+                        style: const TextStyle(
+                            fontSize: 11, color: _Tema.onSurfaceVariant)),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_location_alt_outlined, size: 20),
-            tooltip: 'Nuevo recinto',
-            onPressed: () => _dialogCrearRecinto(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_add_outlined, size: 20),
-            tooltip: 'Nuevo coordinador',
-            onPressed: () => _dialogCrearCoordinador(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_outlined, size: 20),
+            icon: const Icon(Icons.logout_outlined,
+                size: 20, color: _Tema.onSurfaceVariant),
             onPressed: () async {
               await ref.read(loginControllerProvider.notifier).logout();
               if (context.mounted) {
@@ -113,43 +140,56 @@ class _CoordinadorProvincialPanelScreenState
             },
           ),
         ],
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: const Color(0xFF7C83F7),
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          labelStyle:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(
-                icon: Icon(Icons.location_city_outlined, size: 18),
-                text: 'Recintos'),
-            Tab(
-                icon: Icon(Icons.bar_chart_outlined, size: 18),
-                text: 'Dashboard'),
-            Tab(
-                icon: Icon(Icons.people_outline, size: 18),
-                text: 'Coordinadores'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
+      body: Column(
         children: [
-          _TabRecintos(onCrear: () => _dialogCrearRecinto(context)),
-          _TabDashboard(
-            filtroDigidad: _dignidadFiltro,
-            filtroRecinto: _recintoFiltro,
-            onFiltroDigidadChanged: (v) => setState(() => _dignidadFiltro = v),
-            onFiltroRecintoChanged: (v) => setState(() => _recintoFiltro = v),
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabCtrl,
+              indicatorColor: _Tema.primary,
+              indicatorWeight: 3,
+              labelColor: _Tema.primary,
+              unselectedLabelColor: _Tema.onSurfaceVariant,
+              labelStyle:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              tabs: const [
+                Tab(
+                    icon: Icon(Icons.location_city_outlined, size: 20),
+                    text: 'Inicio'),
+                Tab(
+                    icon: Icon(Icons.bar_chart_outlined, size: 20),
+                    text: 'Actas'),
+                Tab(icon: Icon(Icons.people_outline, size: 20), text: 'Coordinadores'),
+              ],
+            ),
           ),
-          const _TabCoordinadores(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                _TabRecintos(
+                  onCrear: () => _dialogCrearRecinto(context),
+                  onCrearCoordinador: () => _dialogCrearCoordinador(context),
+                ),
+                _TabDashboard(
+                  filtroDigidad: _dignidadFiltro,
+                  filtroRecinto: _recintoFiltro,
+                  onFiltroDigidadChanged: (v) =>
+                      setState(() => _dignidadFiltro = v),
+                  onFiltroRecintoChanged: (v) =>
+                      setState(() => _recintoFiltro = v),
+                ),
+                const _TabCoordinadores(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ── Diálogo crear recinto ──────────────────────────────────────────────────
+  // ── Diálogo crear recinto (Estilo screen.png) ─────────────────────────────
   void _dialogCrearRecinto(BuildContext context) {
     final ctrlNombre = TextEditingController();
     final ctrlCanton = TextEditingController();
@@ -158,256 +198,373 @@ class _CoordinadorProvincialPanelScreenState
     final ctrlNumJRV = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo recinto electoral',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _CampoForm(ctrl: ctrlNombre, label: 'Nombre del recinto'),
-                const SizedBox(height: 10),
-                _CampoForm(ctrl: ctrlCanton, label: 'Cantón'),
-                const SizedBox(height: 10),
-                _CampoForm(ctrl: ctrlParroquia, label: 'Parroquia'),
-                const SizedBox(height: 10),
-                _CampoForm(
-                  ctrl: ctrlNumJRV,
-                  label: 'Número de JRV / mesas',
-                  digitsOnly: true,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Obligatorio';
-                    final n = int.tryParse(v);
-                    if (n == null || n < 1) return 'Debe ser mayor a 0';
-                    return null;
-                  },
+      isScrollControlled: true,
+      backgroundColor: _Tema.background,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          children: [
+            const Center(
+                child: Icon(Icons.location_city_outlined,
+                    size: 40, color: _Tema.primary)),
+            const SizedBox(height: 12),
+            const Text('Nuevo Recinto Electoral',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: _Tema.onSurface)),
+            const SizedBox(height: 8),
+            const Text(
+                'Monitoreo en tiempo real de la infraestructura de votación.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
+            const SizedBox(height: 24),
+            Form(
+              key: formKey,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(_Tema.cardRadius),
+                    border: Border.all(color: _Tema.outline)),
+                child: Column(
+                  children: [
+                    _CampoForm(
+                        ctrl: ctrlNombre,
+                        label: 'Nombre del recinto',
+                        icono: Icons.business_outlined,
+                        hint: 'Ej: Unidad Educativa del Milenio'),
+                    const SizedBox(height: 16),
+                    _CampoForm(
+                        ctrl: ctrlCanton,
+                        label: 'Cantón',
+                        icono: Icons.map_outlined,
+                        hint: 'Ej: Quito'),
+                    const SizedBox(height: 16),
+                    _CampoForm(
+                        ctrl: ctrlParroquia,
+                        label: 'Parroquia',
+                        icono: Icons.gite_outlined,
+                        hint: 'Ej: Belisario Quevedo'),
+                    const SizedBox(height: 16),
+                    _CampoForm(
+                        ctrl: ctrlNumJRV,
+                        label: 'Número de JRV / mesas',
+                        icono: Icons.pin_outlined,
+                        hint: 'Ej: 42',
+                        digitsOnly: true),
+                    const SizedBox(height: 16),
+                    _CampoForm(
+                        ctrl: ctrlDireccion,
+                        label: 'Dirección (opcional)',
+                        icono: Icons.place_outlined,
+                        hint: 'Ej: Av. Amazonas N32',
+                        required: false),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                _CampoForm(
-                  ctrl: ctrlDireccion,
-                  label: 'Dirección (opcional)',
-                  required: false,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
+            const SizedBox(height: 24),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: _Tema.primary,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                try {
+                  await ref.read(crearRecintoProvider)(
+                    ctrlCanton.text.trim(),
+                    ctrlParroquia.text.trim(),
+                    ctrlNombre.text.trim(),
+                    ctrlDireccion.text.trim().isEmpty
+                        ? null
+                        : ctrlDireccion.text.trim(),
+                    int.parse(ctrlNumJRV.text.trim()),
+                  );
+                  ref.invalidate(todosLosRecintosProvider);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Recinto creado correctamente'),
+                        backgroundColor: _Tema.success));
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: _Tema.errorColor));
+                  }
+                }
+              },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.save_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('Guardar y Registrar',
+                        style: TextStyle(fontWeight: FontWeight.bold))
+                  ]),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: _Tema.onSurfaceVariant,
+                  minimumSize: const Size.fromHeight(50),
+                  side: const BorderSide(color: _Tema.outline),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1A237E)),
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              try {
-                await ref.read(crearRecintoProvider)(
-                  ctrlCanton.text.trim(),
-                  ctrlParroquia.text.trim(),
-                  ctrlNombre.text.trim(),
-                  ctrlDireccion.text.trim().isEmpty
-                      ? null
-                      : ctrlDireccion.text.trim(),
-                  int.parse(ctrlNumJRV.text.trim()), // número de JRV
-                );
-                ref.invalidate(todosLosRecintosProvider);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                    content: Text('Recinto creado correctamente'),
-                    backgroundColor: Colors.green,
-                  ));
-                }
-              } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                    content: Text('Error: $e'),
-                    backgroundColor: Colors.red,
-                  ));
-                }
-              }
-            },
-            child: const Text('Crear'),
-          ),
-        ],
+              child: const Text('Cancelar',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ── Diálogo crear coordinador de recinto ──────────────────────────────────
+  // ── Diálogo crear coordinador (Fiel reflejo de screen.png) ────────────────
   void _dialogCrearCoordinador(BuildContext context) {
     final ctrlCedula = TextEditingController();
-    final ctrlNombres = TextEditingController();
-    final ctrlApellidos = TextEditingController();
+    final ctrlNombre = TextEditingController();
+    final ctrlApellido = TextEditingController();
     final ctrlTelefono = TextEditingController();
     final ctrlCorreo = TextEditingController();
     int? recintoIdSeleccionado;
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: _Tema.background,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           final recintosAsync = ref.watch(todosLosRecintosProvider);
-          return AlertDialog(
-            title: const Text('Crear coordinador de recinto',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            content: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ── Cédula con validación ecuatoriana ──
-                    _CampoForm(
-                      ctrl: ctrlCedula,
-                      label: 'Cédula de identidad',
-                      digitsOnly: true,
-                      maxLength: 10,
-                      validator: CedulaValidator.validate,
-                    ),
-                    const SizedBox(height: 10),
-                    _CampoForm(
-                      ctrl: ctrlNombres,
-                      label: 'Nombres completos',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Los nombres son obligatorios'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    _CampoForm(
-                      ctrl: ctrlApellidos,
-                      label: 'Apellidos completos',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Los apellidos son obligatorios'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    _CampoForm(
-                      ctrl: ctrlTelefono,
-                      label: 'Teléfono de contacto',
-                      digitsOnly: true,
-                      maxLength: 10,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Obligatorio';
-                        if (v.length < 9) return 'Teléfono inválido';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    // ── Correo electrónico ──
-                    _CampoForm(
-                      ctrl: ctrlCorreo,
-                      label: 'Correo electrónico',
-                      keyboard: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'El correo es obligatorio';
-                        }
-                        final emailRegex =
-                            RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
-                        if (!emailRegex.hasMatch(v.trim())) {
-                          return 'Correo electrónico inválido';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    // ── Selector de recinto ──
-                    recintosAsync.when(
-                      loading: () => const CircularProgressIndicator(),
-                      error: (e, _) => Text('Error: $e'),
-                      data: (recintos) => DropdownButtonFormField<int>(
-                        value: recintoIdSeleccionado,
-                        hint: const Text('Asignar a recinto'),
-                        decoration: const InputDecoration(
-                            border: OutlineInputBorder(), isDense: true),
-                        validator: (v) =>
-                            v == null ? 'Selecciona un recinto' : null,
-                        items: recintos
-                            .map((r) => DropdownMenuItem(
-                                  value: r.id,
-                                  child: Text(r.nombre,
-                                      style: const TextStyle(fontSize: 13)),
-                                ))
-                            .toList(),
-                        onChanged: (v) => setS(() => recintoIdSeleccionado = v),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Aviso de correo de confirmación
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.mail_outline,
-                              size: 16, color: Color(0xFF2E7D32)),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Se enviará un correo de confirmación para activar la cuenta.',
-                              style: TextStyle(
-                                  fontSize: 11, color: Color(0xFF2E7D32)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancelar')),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E)),
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) return;
-                  try {
-                    await ref.read(crearCoordinadorRecintoProvider)(
-                      ctrlCedula.text.trim(),
-                      ctrlNombres.text.trim(),
-                      ctrlApellidos.text.trim(),
-                      ctrlTelefono.text.trim(),
-                      ctrlCorreo.text.trim(),
-                      recintoIdSeleccionado!,
-                    );
-                    ref.invalidate(coordinadoresRecintoProvider);
-                    if (ctx.mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Coordinador creado · Se envió correo de confirmación'),
-                          backgroundColor: Colors.green,
+          return DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, scrollController) => ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              children: [
+                const Center(
+                    child: Icon(Icons.person_add_outlined,
+                        size: 40, color: _Tema.primary)),
+                const SizedBox(height: 12),
+                const Text('Nuevo Coordinador de Recinto',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _Tema.onSurface)),
+                const SizedBox(height: 8),
+                const Text(
+                    'Complete los datos institucionales para dar de alta al nuevo responsable electoral en el sistema.',
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
+                const SizedBox(height: 24),
+                Form(
+                  key: formKey,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(_Tema.cardRadius),
+                        border: Border.all(color: _Tema.outline)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _CampoForm(
+                            ctrl: ctrlCedula,
+                            label: 'Cédula de Identidad',
+                            icono: Icons.badge_outlined,
+                            hint: 'Ej: 0000000000 (10 dígitos)',
+                            digitsOnly: true,
+                            maxLength: 10,
+                            validator: CedulaValidator.validate),
+                        const SizedBox(height: 16),
+                        _CampoForm(
+                            ctrl: ctrlNombre,
+                            label: 'Nombres Completos',
+                            icono: Icons.person_outline,
+                            hint: 'Ej: Juan Antonio',
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Obligatorio'
+                                : null),
+                        const SizedBox(height: 16),
+                        _CampoForm(
+                            ctrl: ctrlApellido,
+                            label: 'Apellidos Completos',
+                            icono: Icons.person_outline,
+                            hint: 'Ej: Pérez García',
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Obligatorio'
+                                : null),
+                        const SizedBox(height: 16),
+                        _CampoForm(
+                            ctrl: ctrlTelefono,
+                            label: 'Teléfono de Contacto',
+                            icono: Icons.phone_outlined,
+                            hint: 'Ej: 0999999999',
+                            digitsOnly: true,
+                            maxLength: 10),
+                        const SizedBox(height: 16),
+                        _CampoForm(
+                            ctrl: ctrlCorreo,
+                            label: 'Correo Electrónico',
+                            icono: Icons.mail_outline,
+                            hint: 'usuario@autoridad.gob',
+                            keyboard: TextInputType.emailAddress),
+                        const SizedBox(height: 16),
+                        const Row(
+                          children: [
+                            Icon(Icons.business_outlined,
+                                size: 16, color: _Tema.onSurfaceVariant),
+                            SizedBox(width: 6),
+                            Text('Asignar Recinto',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: _Tema.onSurfaceVariant)),
+                          ],
                         ),
+                        const SizedBox(height: 6),
+                        recintosAsync.when(
+                          loading: () => const LinearProgressIndicator(),
+                          error: (e, _) => Text('Error: $e'),
+                          data: (recintos) => DropdownButtonFormField<int>(
+                            value: recintoIdSeleccionado,
+                            hint: const Text('Seleccione un recinto...',
+                                style: TextStyle(fontSize: 13)),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide:
+                                      const BorderSide(color: _Tema.outline)),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide:
+                                      const BorderSide(color: _Tema.outline)),
+                            ),
+                            items: recintos
+                                .map((r) => DropdownMenuItem(
+                                    value: r.id,
+                                    child: Text(r.nombre,
+                                        style: const TextStyle(fontSize: 13))))
+                                .toList(),
+                            onChanged: (v) =>
+                                setS(() => recintoIdSeleccionado = v),
+                            validator: (v) => v == null
+                                ? 'Por favor asigne un recinto'
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                              color: _Tema.brandAccent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: _Tema.primary.withOpacity(0.1))),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.lock_outline,
+                                  size: 18, color: _Tema.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Al hacer clic en \'Guardar y Asignar\', se enviará una invitación de acceso seguro al correo proporcionado y se registrará la vinculación en el sistema institucional.',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: _Tema.primary,
+                                      height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                      backgroundColor: _Tema.primary,
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8))),
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    try {
+                      await ref.read(crearCoordinadorRecintoProvider)(
+                        ctrlCedula.text.trim(),
+                        ctrlNombre.text.trim(),
+                        ctrlApellido.text.trim(),
+                        ctrlTelefono.text.trim(),
+                        ctrlCorreo.text.trim(),
+                        recintoIdSeleccionado!,
                       );
+                      ref.invalidate(coordinadoresRecintoProvider);
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text(
+                                'Coordinador creado e invitado exitosamente'),
+                            backgroundColor: _Tema.success));
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: _Tema.errorColor));
+                      }
                     }
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ));
-                    }
-                  }
-                },
-                child: const Text('Crear y enviar correo'),
-              ),
-            ],
+                  },
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.assignment_ind_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Guardar y Asignar',
+                            style: TextStyle(fontWeight: FontWeight.bold))
+                      ]),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: _Tema.onSurfaceVariant,
+                      minimumSize: const Size.fromHeight(50),
+                      side: const BorderSide(color: _Tema.outline),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8))),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -416,361 +573,368 @@ class _CoordinadorProvincialPanelScreenState
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB 1 — RECINTOS
+// TAB 1 — GESTIÓN DE RECINTOS (Inspirado en screen3.png)
 // ═════════════════════════════════════════════════════════════════════════════
 class _TabRecintos extends ConsumerWidget {
   final VoidCallback onCrear;
-  const _TabRecintos({required this.onCrear});
+  final VoidCallback onCrearCoordinador;
+  const _TabRecintos({required this.onCrear, required this.onCrearCoordinador});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recintosAsync = ref.watch(todosLosRecintosProvider);
+    final actasGlobalAsync = ref.watch(actasGlobalCountProvider);
 
     return RefreshIndicator(
-      color: const Color(0xFF1A237E),
-      onRefresh: () async => ref.invalidate(todosLosRecintosProvider),
-      child: recintosAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-            child:
-                Text('Error: $e', style: const TextStyle(color: Colors.red))),
-        data: (recintos) {
-          if (recintos.isEmpty) {
-            return _EmptyState(
-              icono: Icons.location_city_outlined,
-              mensaje: 'Sin recintos registrados',
-              sub: 'Crea el primer recinto electoral.',
-              boton: 'Crear recinto',
-              onTap: onCrear,
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: recintos.length,
-            itemBuilder: (_, i) => _TarjetaRecinto(recinto: recintos[i]),
-          );
-        },
+      color: _Tema.primary,
+      onRefresh: () async {
+        ref.invalidate(todosLosRecintosProvider);
+        ref.invalidate(actasGlobalCountProvider);
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: _Tema.outline),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8))),
+                  onPressed: onCrearCoordinador,
+                  icon: const Icon(Icons.person_add_alt_1_outlined, size: 16),
+                  label: const Text('+ Coordinador',
+                      style: TextStyle(fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                      backgroundColor: _Tema.primary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8))),
+                  onPressed: onCrear,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Nuevo Recinto',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Tarjetas KPI de Resumen Global (ahora con progreso REAL calculado
+          // a partir de las actas ingresadas vs. el total posible: mesas * 2)
+          recintosAsync.when(
+            loading: () => const SizedBox(),
+            error: (_, __) => const SizedBox(),
+            data: (recintos) {
+              final totalJRV =
+                  recintos.fold<int>(0, (acc, r) => acc + r.numMesas);
+              final totalActasPosibles = totalJRV * 2;
+
+              return actasGlobalAsync.when(
+                loading: () => Column(
+                  children: [
+                    _CardKPI(
+                        label: 'TOTAL RECINTOS',
+                        value: '${recintos.length}',
+                        icon: Icons.business_outlined),
+                    const SizedBox(height: 10),
+                    _CardKPI(
+                        label: 'TOTAL JRV (MESAS)',
+                        value: '$totalJRV',
+                        icon: Icons.how_to_vote_outlined),
+                    const SizedBox(height: 10),
+                    const _CardKPI(
+                        label: 'PROGRESO GLOBAL DE ACTAS',
+                        value: '...',
+                        icon: Icons.analytics_outlined),
+                  ],
+                ),
+                error: (_, __) => Column(
+                  children: [
+                    _CardKPI(
+                        label: 'TOTAL RECINTOS',
+                        value: '${recintos.length}',
+                        icon: Icons.business_outlined),
+                    const SizedBox(height: 10),
+                    _CardKPI(
+                        label: 'TOTAL JRV (MESAS)',
+                        value: '$totalJRV',
+                        icon: Icons.how_to_vote_outlined),
+                    const SizedBox(height: 10),
+                    const _CardKPI(
+                        label: 'PROGRESO GLOBAL DE ACTAS',
+                        value: 'Error',
+                        icon: Icons.analytics_outlined),
+                  ],
+                ),
+                data: (totalActas) {
+                  final progreso = totalActasPosibles == 0
+                      ? 0.0
+                      : (totalActas / totalActasPosibles).clamp(0.0, 1.0);
+                  return Column(
+                    children: [
+                      _CardKPI(
+                          label: 'TOTAL RECINTOS',
+                          value: '${recintos.length}',
+                          icon: Icons.business_outlined),
+                      const SizedBox(height: 10),
+                      _CardKPI(
+                          label: 'TOTAL JRV (MESAS)',
+                          value: '$totalJRV',
+                          icon: Icons.how_to_vote_outlined),
+                      const SizedBox(height: 10),
+                      _CardKPI(
+                        label: 'PROGRESO GLOBAL DE ACTAS',
+                        value: '${(progreso * 100).toStringAsFixed(1)}%',
+                        icon: Icons.analytics_outlined,
+                        progress: progreso,
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          const Text('Recintos Registrados',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: _Tema.onSurfaceVariant)),
+          const SizedBox(height: 8),
+
+          recintosAsync.when(
+            loading: () => const Center(
+                child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator())),
+            error: (e, _) => Center(
+                child: Text('Error: $e',
+                    style: const TextStyle(color: _Tema.errorColor))),
+            data: (recintos) {
+              if (recintos.isEmpty) {
+                return _EmptyState(
+                    icono: Icons.location_city_outlined,
+                    mensaje: 'Sin recintos',
+                    sub: 'Crea el primero usando el botón superior.',
+                    boton: 'Crear recinto',
+                    onTap: onCrear);
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: recintos.length,
+                itemBuilder: (_, i) =>
+                    _TarjetaRecintoModerno(recinto: recintos[i]),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _TarjetaRecinto extends ConsumerWidget {
+class _CardKPI extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final double? progress;
+
+  const _CardKPI(
+      {required this.label,
+      required this.value,
+      required this.icon,
+      this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+          border: Border.all(color: _Tema.outline)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: _Tema.primary),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _Tema.greyLight,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: _Tema.onSurface)),
+          if (progress != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: _Tema.background,
+                  color: _Tema.primary),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+}
+
+class _TarjetaRecintoModerno extends ConsumerWidget {
   final Recinto recinto;
-  const _TarjetaRecinto({required this.recinto});
+  const _TarjetaRecintoModerno({required this.recinto});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resumenAsync = ref.watch(resumenPorRecintoProvider(recinto));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+          border: Border.all(color: _Tema.outline)),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_Tema.cardRadius),
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _DetalleRecintoScreen(recinto: recinto),
-        )),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFE8EAF6),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-              ),
-              child: Row(
+            builder: (_) => _DetalleRecintoScreen(recinto: recinto))),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_city_outlined,
-                      size: 16, color: Color(0xFF1A237E)),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(recinto.nombre,
                         style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A237E))),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: _Tema.onSurface)),
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 16, color: Color(0xFF1A237E)),
-                ],
-              ),
-            ),
-            // Sub-info
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  const Icon(Icons.place_outlined,
-                      size: 13, color: Color(0xFF9E9E9E)),
-                  const SizedBox(width: 4),
-                  Text('${recinto.canton} · ${recinto.parroquia}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF757575))),
-                  const Spacer(),
                   resumenAsync.when(
                     loading: () => const SizedBox(
-                        width: 14,
-                        height: 14,
+                        width: 12,
+                        height: 12,
                         child: CircularProgressIndicator(strokeWidth: 2)),
                     error: (_, __) => const SizedBox(),
-                    data: (r) => _PillAvance(resumen: r),
+                    data: (r) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: r.porcentaje == 1.0
+                            ? _Tema.successContainer
+                            : _Tema.brandAccent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        r.porcentaje == 1.0 ? 'ACTIVO' : 'PENDIENTE',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: r.porcentaje == 1.0
+                                ? _Tema.success
+                                : _Tema.primary),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            // Barra de progreso
-            resumenAsync.when(
-              loading: () => const SizedBox(),
-              error: (_, __) => const SizedBox(),
-              data: (r) => r.totalMesas == 0
-                  ? const SizedBox()
-                  : Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: r.porcentaje,
-                              minHeight: 6,
-                              backgroundColor: const Color(0xFFE8EAF6),
-                              color: r.porcentaje == 1
-                                  ? Colors.green
-                                  : const Color(0xFF3949AB),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${r.totalActas} / ${r.totalMesas * 2} actas · ${r.totalMesas} mesas',
+              const SizedBox(height: 8),
+              _IconInfoRow(
+                  icon: Icons.location_on_outlined,
+                  text: '${recinto.canton}, ${recinto.parroquia}'),
+              const SizedBox(height: 4),
+              _IconInfoRow(
+                  icon: Icons.how_to_vote_outlined,
+                  text: '${recinto.numMesas} JRV (Mesas)'),
+              const SizedBox(height: 12),
+              resumenAsync.when(
+                loading: () => const SizedBox(),
+                error: (_, __) => const SizedBox(),
+                data: (r) => Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Avance de Actas',
+                            style: TextStyle(
+                                fontSize: 11, color: _Tema.onSurfaceVariant)),
+                        Text('${(r.porcentaje * 100).toStringAsFixed(0)}%',
                             style: const TextStyle(
-                                fontSize: 10, color: Color(0xFF9E9E9E)),
-                          ),
-                        ],
-                      ),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _Tema.primary)),
+                      ],
                     ),
-            ),
-          ],
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                          value: r.porcentaje,
+                          minHeight: 6,
+                          backgroundColor: _Tema.background,
+                          color: _Tema.primary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Align(
+                  alignment: Alignment.centerRight,
+                  child: Icon(Icons.arrow_forward,
+                      size: 16, color: _Tema.greyLight)),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _PillAvance extends StatelessWidget {
-  final ResumenRecintoProv resumen;
-  const _PillAvance({required this.resumen});
+class _IconInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _IconInfoRow({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final color = resumen.pendientes == 0
-        ? Colors.green.shade600
-        : resumen.porcentaje > 0.5
-            ? Colors.blue.shade600
-            : Colors.orange.shade700;
-    final bg = resumen.pendientes == 0
-        ? Colors.green.shade50
-        : resumen.porcentaje > 0.5
-            ? Colors.blue.shade50
-            : Colors.orange.shade50;
-    final label = resumen.pendientes == 0
-        ? 'Completo'
-        : '${resumen.pendientes} pendientes';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: _Tema.greyLight),
+        const SizedBox(width: 6),
+        Text(text,
+            style:
+                const TextStyle(fontSize: 12, color: _Tema.onSurfaceVariant)),
+      ],
     );
   }
-}
-
-// ─── Detalle de un recinto ────────────────────────────────────────────────────
-class _DetalleRecintoScreen extends ConsumerWidget {
-  final Recinto recinto;
-  const _DetalleRecintoScreen({required this.recinto});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final actasAsync = ref.watch(actasDeRecintoProvider(recinto.id));
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F9),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
-        foregroundColor: Colors.white,
-        title: Text(recinto.nombre,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined, size: 20),
-            onPressed: () => ref.invalidate(actasDeRecintoProvider(recinto.id)),
-          ),
-        ],
-      ),
-      body: actasAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-            child:
-                Text('Error: $e', style: const TextStyle(color: Colors.red))),
-        data: (actas) {
-          if (actas.isEmpty) {
-            return const Center(
-              child: Text('Sin actas registradas en este recinto.',
-                  style: TextStyle(color: Color(0xFF9E9E9E))),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: actas.length,
-            itemBuilder: (_, i) => _TarjetaActaDetalle(acta: actas[i]),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TarjetaActaDetalle extends StatelessWidget {
-  final Acta acta;
-  const _TarjetaActaDetalle({required this.acta});
-
-  @override
-  Widget build(BuildContext context) {
-    final tieneGps = acta.gpsLat != null && acta.gpsLng != null;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _BadgeEstado(acta: acta),
-              const SizedBox(width: 8),
-              Text(
-                acta.dignidad == Dignidad.alcalde
-                    ? 'Acta de Alcalde'
-                    : 'Acta de Prefecto',
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Text('Mesa ${acta.mesaId}',
-                  style:
-                      const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-            ],
-          ),
-          if (tieneGps) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: Color(0xFF2E7D32)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'GPS: ${acta.gpsLat!.toStringAsFixed(6)}, ${acta.gpsLng!.toStringAsFixed(6)}',
-                    style:
-                        const TextStyle(fontSize: 11, color: Color(0xFF2E7D32)),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.location_off_outlined,
-                      size: 14, color: Colors.orange.shade700),
-                  const SizedBox(width: 6),
-                  Text('Sin coordenadas GPS',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.orange.shade700)),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Text('Registrada: ${_formatFecha(acta.createdAt)}',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-        ],
-      ),
-    );
-  }
-
-  String _formatFecha(DateTime? dt) {
-    if (dt == null) return '—';
-    return '${dt.day.toString().padLeft(2, '0')}/'
-        '${dt.month.toString().padLeft(2, '0')}/'
-        '${dt.year}  '
-        '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-class _BadgeEstado extends StatelessWidget {
-  final Acta acta;
-  const _BadgeEstado({required this.acta});
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (acta.estado) {
-      EstadoActa.ingresada =>
-        _pill('Ingresada', Colors.blue.shade700, Colors.blue.shade50),
-      EstadoActa.revisada =>
-        _pill('Revisada', Colors.green.shade700, Colors.green.shade50),
-      EstadoActa.conNovedad =>
-        _pill('Con novedad', Colors.red.shade700, Colors.red.shade50),
-    };
-  }
-
-  Widget _pill(String label, Color color, Color bg) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration:
-            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(5)),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 10, color: color, fontWeight: FontWeight.w500)),
-      );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB 2 — DASHBOARD DE VOTOS (con filtro por recinto)
+// TAB 2 — DASHBOARD DE VOTOS CONSOLIDADOS (Inspirado en screen4.png)
 // ═════════════════════════════════════════════════════════════════════════════
 class _TabDashboard extends ConsumerWidget {
   final String filtroDigidad;
@@ -791,42 +955,42 @@ class _TabDashboard extends ConsumerWidget {
     final recintosAsync = ref.watch(todosLosRecintosProvider);
 
     return RefreshIndicator(
-      color: const Color(0xFF1A237E),
+      color: _Tema.primary,
       onRefresh: () async => ref.invalidate(dashboardVotosProvider),
       child: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         children: [
-          // ── Filtro por recinto ──
-          recintosAsync.when(
-            loading: () => const SizedBox(),
-            error: (_, __) => const SizedBox(),
-            data: (recintos) => _SelectorRecinto(
-              recintos: recintos,
-              seleccionado: filtroRecinto,
-              onChanged: onFiltroRecintoChanged,
-            ),
+          // Selectores Superiores de Filtro
+          Row(
+            children: [
+              Expanded(
+                child: recintosAsync.when(
+                  loading: () => const SizedBox(),
+                  error: (_, __) => const SizedBox(),
+                  data: (recintos) => _SelectorRecinto(
+                      recintos: recintos,
+                      seleccionado: filtroRecinto,
+                      onChanged: onFiltroRecintoChanged),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
-
-          // ── Filtro por dignidad ──
           _SelectorDignidad(
               valor: filtroDigidad, onChanged: onFiltroDigidadChanged),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           votosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
                 child: Text('Error: $e',
-                    style: const TextStyle(color: Colors.red))),
+                    style: const TextStyle(color: _Tema.errorColor))),
             data: (votos) {
-              // Filtrar por recinto si aplica
               var filtrados = filtroRecinto != null
                   ? votos
                       .where((v) => v.recintoNombre == filtroRecinto)
                       .toList()
                   : votos;
-
-              // Filtrar por dignidad
               filtrados = filtroDigidad == 'Todos'
                   ? filtrados
                   : filtrados
@@ -835,110 +999,180 @@ class _TabDashboard extends ConsumerWidget {
 
               if (filtrados.isEmpty) {
                 return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 40),
-                    child: Text('Sin votos registrados aún.',
-                        style: TextStyle(color: Color(0xFF9E9E9E))),
-                  ),
-                );
+                    child: Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Text('Sin actas validadas para este filtro.',
+                            style: TextStyle(color: _Tema.greyLight))));
               }
 
-              // Encabezado del resumen
               final totalVotos =
                   filtrados.fold<int>(0, (acc, v) => acc + v.totalVotos);
               final maxVotos =
                   filtrados.isEmpty ? 1 : filtrados.first.totalVotos;
 
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tarjeta resumen total
+                  // KPI de control principal
+                  _CardKPI(
+                      label: 'TOTAL VOTOS ESCRUTADOS',
+                      value: '$totalVotos',
+                      icon: Icons.trending_up_outlined),
+                  const SizedBox(height: 20),
+
+                  // Caja Contenedora de Resultados Consolidados (Estilo screen4.png)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A237E),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(_Tema.cardRadius),
+                        border: Border.all(color: _Tema.outline)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.how_to_vote_outlined,
-                            color: Colors.white70, size: 20),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              filtroRecinto ?? 'Todos los recintos',
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.white70),
-                            ),
-                            Text(
-                              '$totalVotos votos totales',
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700),
-                            ),
+                            const Text('Resultados Consolidados',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _Tema.onSurface)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                  color: _Tema.primary,
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Text(filtroDigidad,
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            )
                           ],
                         ),
+                        const Divider(height: 24),
+                        ...filtrados.asMap().entries.map((e) =>
+                            _FilaCandidatoModerno(
+                                posicion: e.key + 1,
+                                datos: e.value,
+                                maxVotos: maxVotos)),
                       ],
                     ),
                   ),
-                  ...filtrados.asMap().entries.map((e) => _BarraCandidato(
-                        posicion: e.key + 1,
-                        datos: e.value,
-                        maxVotos: maxVotos,
-                      )),
                 ],
               );
             },
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
 
-// ── Selector de recinto para el dashboard ────────────────────────────────────
+class _FilaCandidatoModerno extends StatelessWidget {
+  final int posicion;
+  final VotosCandidato datos;
+  final int maxVotos;
+
+  const _FilaCandidatoModerno(
+      {required this.posicion, required this.datos, required this.maxVotos});
+
+  @override
+  Widget build(BuildContext context) {
+    final porcentaje = maxVotos == 0 ? 0.0 : datos.totalVotos / maxVotos;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: _Tema.brandAccent,
+                child: Text('$posicion',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: _Tema.primary)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(datos.nombre,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _Tema.onSurface)),
+                    Text(datos.organizacion,
+                        style: const TextStyle(
+                            fontSize: 11, color: _Tema.greyLight)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${datos.totalVotos} Votos',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _Tema.primary)),
+                  Text('${(porcentaje * 100).toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                          fontSize: 11, color: _Tema.onSurfaceVariant)),
+                ],
+              )
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+                value: porcentaje,
+                minHeight: 6,
+                backgroundColor: _Tema.background,
+                color: posicion == 1 ? _Tema.primary : _Tema.greyLight),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// ── Selector de Recinto (Estilo limpio) ──────────────────────────────────────
 class _SelectorRecinto extends StatelessWidget {
   final List<Recinto> recintos;
   final String? seleccionado;
   final ValueChanged<String?> onChanged;
 
-  const _SelectorRecinto({
-    required this.recintos,
-    required this.seleccionado,
-    required this.onChanged,
-  });
+  const _SelectorRecinto(
+      {required this.recintos,
+      required this.seleccionado,
+      required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _Tema.outline)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: seleccionado,
           isExpanded: true,
-          hint: const Text('Todos los recintos',
-              style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
-          icon: const Icon(Icons.filter_list_outlined,
-              size: 18, color: Color(0xFF1A237E)),
+          icon: const Icon(Icons.filter_list_outlined, color: _Tema.primary),
           items: [
             const DropdownMenuItem<String?>(
-              value: null,
-              child: Text('Todos los recintos', style: TextStyle(fontSize: 13)),
-            ),
+                value: null,
+                child:
+                    Text('Todos los recintos', style: TextStyle(fontSize: 13))),
             ...recintos.map((r) => DropdownMenuItem<String?>(
-                  value: r.nombre,
-                  child: Text(r.nombre, style: const TextStyle(fontSize: 13)),
-                )),
+                value: r.nombre,
+                child: Text(r.nombre, style: const TextStyle(fontSize: 13)))),
           ],
           onChanged: onChanged,
         ),
@@ -957,150 +1191,30 @@ class _SelectorDignidad extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _Tema.outline)),
       child: Row(
         children: ['Todos', 'Alcalde', 'Prefecto'].map((d) {
-          final sel = valor == d;
+          final isSel = valor == d;
           return Expanded(
-            child: GestureDetector(
+            child: InkWell(
               onTap: () => onChanged(d),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: sel ? const Color(0xFF1A237E) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  d,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: sel ? Colors.white : const Color(0xFF757575),
-                  ),
-                ),
+                    color: isSel ? _Tema.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text(d,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isSel ? Colors.white : _Tema.onSurfaceVariant)),
               ),
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-}
-
-class _BarraCandidato extends StatelessWidget {
-  final int posicion;
-  final VotosCandidato datos;
-  final int maxVotos;
-
-  const _BarraCandidato({
-    required this.posicion,
-    required this.datos,
-    required this.maxVotos,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final porcentaje = maxVotos == 0 ? 0.0 : datos.totalVotos / maxVotos;
-    final esPrimero = posicion == 1;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: esPrimero
-              ? const Color(0xFF3949AB).withOpacity(0.4)
-              : const Color(0xFFE0E0E0),
-          width: esPrimero ? 1.5 : 0.5,
-        ),
-        boxShadow: esPrimero
-            ? [
-                BoxShadow(
-                    color: const Color(0xFF1A237E).withOpacity(0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3)),
-              ]
-            : [],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _NumeroPosicion(pos: posicion),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(datos.nombre,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF212121))),
-                    Text(
-                      '${datos.organizacion} · ${datos.dignidad}',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9E9E9E)),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '${datos.totalVotos}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: esPrimero
-                      ? const Color(0xFF1A237E)
-                      : const Color(0xFF424242),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: porcentaje,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFE8EAF6),
-              color:
-                  esPrimero ? const Color(0xFF3949AB) : const Color(0xFF9E9E9E),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NumeroPosicion extends StatelessWidget {
-  final int pos;
-  const _NumeroPosicion({required this.pos});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = {
-      1: [const Color(0xFFFFD700), const Color(0xFF8B6914)],
-      2: [const Color(0xFFE8E8E8), const Color(0xFF616161)],
-      3: [const Color(0xFFCD7F32), const Color(0xFF5D4037)],
-    };
-    final c = colors[pos] ?? [const Color(0xFFF5F5F5), const Color(0xFF9E9E9E)];
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(color: c[0], shape: BoxShape.circle),
-      child: Center(
-        child: Text('$pos',
-            style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w700, color: c[1])),
       ),
     );
   }
@@ -1117,46 +1231,44 @@ class _TabCoordinadores extends ConsumerWidget {
     final coordsAsync = ref.watch(coordinadoresRecintoProvider);
 
     return RefreshIndicator(
-      color: const Color(0xFF1A237E),
+      color: _Tema.primary,
       onRefresh: () async => ref.invalidate(coordinadoresRecintoProvider),
       child: coordsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-            child:
-                Text('Error: $e', style: const TextStyle(color: Colors.red))),
+            child: Text('Error: $e',
+                style: const TextStyle(color: _Tema.errorColor))),
         data: (coords) {
           if (coords.isEmpty) {
             return const _EmptyState(
-              icono: Icons.people_outline,
-              mensaje: 'Sin coordinadores registrados',
-              sub: 'Crea coordinadores desde el botón superior.',
-            );
+                icono: Icons.people_outline,
+                mensaje: 'Sin coordinadores registrados',
+                sub: 'Agregue nuevos delegados institucionales.');
           }
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             itemCount: coords.length,
             itemBuilder: (_, i) {
               final c = coords[i];
               return Container(
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
-                ),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(_Tema.cardRadius),
+                    border: Border.all(color: _Tema.outline)),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor: const Color(0xFFE8EAF6),
+                      backgroundColor: _Tema.brandAccent,
                       child: Text(
-                        c.nombres.isNotEmpty ? c.nombres[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                            color: Color(0xFF1A237E),
-                            fontWeight: FontWeight.w700),
-                      ),
+                          c.nombres.isNotEmpty
+                              ? c.nombres[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: _Tema.primary,
+                              fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1165,29 +1277,31 @@ class _TabCoordinadores extends ConsumerWidget {
                         children: [
                           Text('${c.nombres} ${c.apellidos}',
                               style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600)),
-                          Text(c.cedula,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: _Tema.onSurface)),
+                          const SizedBox(height: 2),
+                          Text('C.C: ${c.cedula}',
                               style: const TextStyle(
-                                  fontSize: 11, color: Color(0xFF9E9E9E))),
+                                  fontSize: 11, color: _Tema.onSurfaceVariant)),
                           Text(c.correo,
                               style: const TextStyle(
-                                  fontSize: 11, color: Color(0xFF9E9E9E))),
+                                  fontSize: 11, color: _Tema.greyLight)),
                         ],
                       ),
                     ),
                     if (c.recintoId != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8EAF6),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text('Recinto ${c.recintoId}',
+                            color: _Tema.brandAccent,
+                            borderRadius: BorderRadius.circular(4)),
+                        child: Text('ID Recinto: ${c.recintoId}',
                             style: const TextStyle(
                                 fontSize: 10,
-                                color: Color(0xFF1A237E),
-                                fontWeight: FontWeight.w500)),
+                                color: _Tema.primary,
+                                fontWeight: FontWeight.bold)),
                       ),
                   ],
                 ),
@@ -1200,8 +1314,153 @@ class _TabCoordinadores extends ConsumerWidget {
   }
 }
 
+// ── Detalle de un Recinto Específico (Estilo screen2.png) ─────────────────────
+class _DetalleRecintoScreen extends ConsumerWidget {
+  final Recinto recinto;
+  const _DetalleRecintoScreen({required this.recinto});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actasAsync = ref.watch(actasDeRecintoProvider(recinto.id));
+
+    return Scaffold(
+      backgroundColor: _Tema.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: _Tema.primary,
+        elevation: 0,
+        title: Text(recinto.nombre,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      ),
+      body: actasAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: _Tema.errorColor))),
+        data: (actas) {
+          if (actas.isEmpty) {
+            return const Center(
+                child: Text('Sin actas ingresadas en este recinto.',
+                    style: TextStyle(color: _Tema.greyLight)));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: actas.length,
+            itemBuilder: (_, i) => _TarjetaActaDetalle(acta: actas[i]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TarjetaActaDetalle extends StatelessWidget {
+  final Acta acta;
+  const _TarjetaActaDetalle({required this.acta});
+
+  @override
+  Widget build(BuildContext context) {
+    final tieneGps = acta.gpsLat != null && acta.gpsLng != null;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+          border: Border.all(color: _Tema.outline)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _BadgeEstado(acta: acta),
+              Text('Mesa ${acta.mesaId}',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _Tema.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+              acta.dignidad == Dignidad.alcalde
+                  ? 'Dignidad: Alcalde'
+                  : 'Dignidad: Prefecto',
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: _Tema.onSurface)),
+          const SizedBox(height: 8),
+          if (tieneGps)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: _Tema.successContainer,
+                  borderRadius: BorderRadius.circular(6)),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_outlined,
+                      size: 14, color: _Tema.success),
+                  const SizedBox(width: 6),
+                  Text(
+                      'Ubicación validada geo-redundante (${acta.gpsLat!.toStringAsFixed(4)}, ${acta.gpsLng!.toStringAsFixed(4)})',
+                      style:
+                          const TextStyle(fontSize: 11, color: _Tema.success)),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: _Tema.warningContainer,
+                  borderRadius: BorderRadius.circular(6)),
+              child: const Row(
+                children: [
+                  Icon(Icons.location_off_outlined,
+                      size: 14, color: _Tema.warningColor),
+                  const SizedBox(width: 6),
+                  Text('Coordenadas GPS no capturadas',
+                      style:
+                          TextStyle(fontSize: 11, color: _Tema.warningColor)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeEstado extends StatelessWidget {
+  final Acta acta;
+  const _BadgeEstado({required this.acta});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (acta.estado) {
+      EstadoActa.ingresada =>
+        _pill('Ingresada', _Tema.primary, _Tema.brandAccent),
+      EstadoActa.revisada =>
+        _pill('Escrutado 100%', _Tema.success, _Tema.successContainer),
+      EstadoActa.conNovedad =>
+        _pill('Con Novedad', _Tema.errorColor, _Tema.errorContainer),
+    };
+  }
+
+  Widget _pill(String label, Color color, Color bg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+      );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
-// Widgets auxiliares
+// WIDGETS AUXILIARES E INFRAESTRUCTURA DE ESTILO (screen.png)
 // ═════════════════════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final IconData icono;
@@ -1210,13 +1469,12 @@ class _EmptyState extends StatelessWidget {
   final String? boton;
   final VoidCallback? onTap;
 
-  const _EmptyState({
-    required this.icono,
-    required this.mensaje,
-    required this.sub,
-    this.boton,
-    this.onTap,
-  });
+  const _EmptyState(
+      {required this.icono,
+      required this.mensaje,
+      required this.sub,
+      this.boton,
+      this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1224,28 +1482,17 @@ class _EmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icono, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
+            Icon(icono, size: 48, color: _Tema.greyLight),
+            const SizedBox(height: 12),
             Text(mensaje,
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600)),
-            const SizedBox(height: 8),
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: _Tema.onSurface)),
             Text(sub,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
-            if (boton != null && onTap != null) ...[
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: onTap,
-                icon: const Icon(Icons.add),
-                label: Text(boton!),
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E)),
-              ),
-            ],
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: _Tema.greyLight)),
           ],
         ),
       ),
@@ -1253,10 +1500,11 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Campo de formulario con validación integrada ──────────────────────────────
 class _CampoForm extends StatelessWidget {
   final TextEditingController ctrl;
   final String label;
+  final IconData icono;
+  final String hint;
   final bool digitsOnly;
   final int? maxLength;
   final bool required;
@@ -1266,6 +1514,8 @@ class _CampoForm extends StatelessWidget {
   const _CampoForm({
     required this.ctrl,
     required this.label,
+    required this.icono,
+    required this.hint,
     this.digitsOnly = false,
     this.maxLength,
     this.required = true,
@@ -1275,25 +1525,54 @@ class _CampoForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: ctrl,
-      keyboardType:
-          keyboard ?? (digitsOnly ? TextInputType.number : TextInputType.text),
-      inputFormatters: [
-        if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icono, size: 14, color: _Tema.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _Tema.onSurfaceVariant)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: ctrl,
+          keyboardType: keyboard ??
+              (digitsOnly ? TextInputType.number : TextInputType.text),
+          inputFormatters: [
+            if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
+            if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+          ],
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: _Tema.greyLight, fontSize: 13),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _Tema.outline)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _Tema.outline)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _Tema.primary, width: 1.5)),
+          ),
+          validator: validator ??
+              (required
+                  ? (v) => (v == null || v.trim().isEmpty)
+                      ? 'Este campo es obligatorio'
+                      : null
+                  : null),
+        ),
       ],
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
-      validator: validator ??
-          (required
-              ? (v) => (v == null || v.trim().isEmpty)
-                  ? '$label es obligatorio'
-                  : null
-              : null),
     );
   }
 }

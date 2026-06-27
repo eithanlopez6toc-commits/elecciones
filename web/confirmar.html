@@ -111,7 +111,7 @@
          Se te pedirá cambiarla al iniciar sesión.</p>
       <a id="btn-app" href="#" class="btn">📱 Abrir la aplicación</a>
       <div class="info">
-        <p>🔒 Si la app no abre automáticamente, asegúrate de tenerla instalada en tu dispositivo móvil.</p>
+        <p>🔒 Toca el botón para abrir la app e iniciar sesión con tu contraseña temporal.</p>
       </div>
     </div>
 
@@ -156,12 +156,8 @@
 
     if (deepLink) {
       document.getElementById('btn-app').href = deepLink;
-
-      // Intentar abrir la app automáticamente
-      setTimeout(() => {
-        window.location.href = deepLink;
-      }, 800);
-
+      // NOTA: ya NO se abre automáticamente con setTimeout.
+      // Solo se abre la app cuando el usuario toca el botón "Abrir la aplicación".
       mostrar('estado-exito');
     } else {
       mostrar('estado-error');

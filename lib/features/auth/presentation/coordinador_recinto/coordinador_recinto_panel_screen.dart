@@ -12,6 +12,26 @@ import '../veedor/acta_form_screen.dart';
 import '../veedor/veedor_providers.dart';
 import 'coordinador_recinto_providers.dart';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM — Democracy Core
+// ═════════════════════════════════════════════════════════════════════════════
+class _Tema {
+  static const primary = Color(0xFF003EC7);
+  static const outline = Color(0xFFE2E8F0);
+  static const cardRadius = 8.0;
+  static const background = Color(0xFFFAF8FF);
+  static const surfaceContainerLow = Color(0xFFF2F3FF);
+  static const onSurface = Color(0xFF131B2E);
+  static const onSurfaceVariant = Color(0xFF434656);
+  static const greyLight = Color(0xFFC3C5D9);
+  static const success = Color(0xFF006C49);
+  static const successContainer = Color(0xFFE8F5E9);
+  static const errorColor = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+  static const warningColor = Color(0xFF9C6B00);
+  static const warningContainer = Color(0xFFFFF3E0);
+}
+
 class CoordinadorRecintoPanelScreen extends ConsumerWidget {
   const CoordinadorRecintoPanelScreen({super.key});
 
@@ -35,9 +55,9 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
     final mesasAsync = ref.watch(mesasPorRecintoProvider(recintoId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F9),
+      backgroundColor: _Tema.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B5E20),
+        backgroundColor: _Tema.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Column(
@@ -59,8 +79,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add_road_outlined, size: 20),
             tooltip: 'Agregar mesa',
-            onPressed: () =>
-                _mostrarDialogoCrearMesa(context, ref, recintoId),
+            onPressed: () => _mostrarDialogoCrearMesa(context, ref, recintoId),
           ),
           IconButton(
             icon: const Icon(Icons.logout_outlined, size: 20),
@@ -74,7 +93,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        color: const Color(0xFF1B5E20),
+        color: _Tema.primary,
         onRefresh: () async {
           ref.invalidate(resumenRecintoProvider(recintoId));
           ref.invalidate(mesasPorRecintoProvider(recintoId));
@@ -89,11 +108,10 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             mesasAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Text('Error: $e',
-                    style: const TextStyle(color: Colors.red)),
+                    style: TextStyle(color: _Tema.errorColor)),
               ),
               data: (mesas) {
                 if (mesas.isEmpty) {
@@ -145,17 +163,18 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text('Género',
-                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    style:
+                        TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
               ),
               const SizedBox(height: 6),
               ...GeneroMesa.values.map((g) => RadioListTile<GeneroMesa>(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(g.dbValue,
-                        style: const TextStyle(fontSize: 13)),
+                    title:
+                        Text(g.dbValue, style: const TextStyle(fontSize: 13)),
                     value: g,
                     groupValue: generoSeleccionado,
                     onChanged: (v) => setS(() => generoSeleccionado = v!),
@@ -167,8 +186,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cancelar')),
             FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20)),
+              style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
               onPressed: () async {
                 final numero = int.tryParse(ctrlNumero.text);
                 if (numero == null) return;
@@ -182,7 +200,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
                         content: Text('Error: $e'),
-                        backgroundColor: Colors.red));
+                        backgroundColor: _Tema.errorColor));
                   }
                 }
               },
@@ -292,8 +310,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                                       'Mesa ${m.numeroMesa} — ${m.genero.dbValue}'),
                                 ))
                             .toList(),
-                        onChanged: (v) =>
-                            setS(() => mesaIdSeleccionada = v),
+                        onChanged: (v) => setS(() => mesaIdSeleccionada = v),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -301,20 +318,21 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
+                        color: _Tema.successContainer,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
+                        border:
+                            Border.all(color: _Tema.success.withOpacity(0.3)),
                       ),
                       child: Row(
-                        children: const [
+                        children: [
                           Icon(Icons.mail_outline,
-                              size: 16, color: Color(0xFF2E7D32)),
-                          SizedBox(width: 8),
+                              size: 16, color: _Tema.success),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Se enviará un correo de confirmación para activar la cuenta.',
-                              style: TextStyle(
-                                  fontSize: 11, color: Color(0xFF2E7D32)),
+                              style:
+                                  TextStyle(fontSize: 11, color: _Tema.success),
                             ),
                           ),
                         ],
@@ -329,8 +347,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Cancelar')),
               FilledButton(
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B5E20)),
+                style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   try {
@@ -346,10 +363,10 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                     if (ctx.mounted) {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text(
+                        SnackBar(
+                          content: const Text(
                               'Veedor creado · Se envió correo de confirmación'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: _Tema.success,
                         ),
                       );
                     }
@@ -357,7 +374,7 @@ class CoordinadorRecintoPanelScreen extends ConsumerWidget {
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
                           content: Text('Error: $e'),
-                          backgroundColor: Colors.red));
+                          backgroundColor: _Tema.errorColor));
                     }
                   }
                 },
@@ -383,12 +400,12 @@ class _BannerResumen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
+        gradient: LinearGradient(
+          colors: [_Tema.primary, _Tema.primary.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_Tema.cardRadius),
       ),
       child: Row(
         children: [
@@ -431,8 +448,7 @@ class _Stat extends StatelessWidget {
                 )),
             Text(etiqueta,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(color: Colors.white70, fontSize: 10)),
+                style: const TextStyle(color: Colors.white70, fontSize: 10)),
           ],
         ),
       );
@@ -453,12 +469,12 @@ class _BannerCargando extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         height: 72,
         decoration: BoxDecoration(
-          color: const Color(0xFF1B5E20),
-          borderRadius: BorderRadius.circular(12),
+          color: _Tema.primary,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
         ),
         child: const Center(
-            child: CircularProgressIndicator(
-                color: Colors.white, strokeWidth: 2)),
+            child:
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
       );
 }
 
@@ -469,11 +485,10 @@ class _BannerError extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(12),
+          color: _Tema.errorContainer,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
         ),
-        child:
-            Text(mensaje, style: TextStyle(color: Colors.red.shade700)),
+        child: Text(mensaje, style: TextStyle(color: _Tema.errorColor)),
       );
 }
 
@@ -484,8 +499,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
   final MesaJrv mesa;
   final Usuario usuario;
 
-  const _TarjetaMesaCoordinador(
-      {required this.mesa, required this.usuario});
+  const _TarjetaMesaCoordinador({required this.mesa, required this.usuario});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -495,29 +509,22 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.circular(_Tema.cardRadius),
+        border: Border.all(color: _Tema.outline, width: 1),
       ),
       child: Column(
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8F5E9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _Tema.surfaceContainerLow,
               borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(12)),
+                  const BorderRadius.vertical(top: Radius.circular(8.0)),
             ),
             child: Row(
               children: [
                 const Icon(Icons.how_to_vote_outlined,
-                    size: 16, color: Color(0xFF1B5E20)),
+                    size: 16, color: _Tema.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -525,13 +532,13 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                     style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1B5E20)),
+                        color: _Tema.primary),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => _mostrarReasignar(context, ref, mesa),
                   child: const Icon(Icons.swap_horiz,
-                      size: 18, color: Color(0xFF1B5E20)),
+                      size: 18, color: _Tema.primary),
                 ),
               ],
             ),
@@ -539,14 +546,12 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
           actasAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2)),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(12),
               child: Text('Error: $e',
-                  style: const TextStyle(
-                      color: Colors.red, fontSize: 12)),
+                  style: TextStyle(color: _Tema.errorColor, fontSize: 12)),
             ),
             data: (actas) {
               final actaAlcalde = actas
@@ -564,10 +569,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
                     onTap: () => _irAFormulario(
                         context, ref, Dignidad.alcalde, actaAlcalde),
                   ),
-                  Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: Colors.grey.shade200),
+                  Divider(height: 1, thickness: 1, color: _Tema.outline),
                   _FilaActaCoordinador(
                     etiqueta: 'Acta de Prefecto',
                     acta: actaPrefecto,
@@ -585,8 +587,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
 
   Future<void> _irAFormulario(BuildContext context, WidgetRef ref,
       Dignidad dignidad, Acta? actaExistente) async {
-    final orgsAsync =
-        ref.read(organizacionesPorDignidadProvider(dignidad));
+    final orgsAsync = ref.read(organizacionesPorDignidadProvider(dignidad));
     final orgs = orgsAsync.maybeWhen(
         data: (d) => d, orElse: () => <OrganizacionPolitica>[]);
 
@@ -608,8 +609,7 @@ class _TarjetaMesaCoordinador extends ConsumerWidget {
     ref.invalidate(actasDeMesaProvider(mesa.id));
   }
 
-  void _mostrarReasignar(
-      BuildContext context, WidgetRef ref, MesaJrv mesa) {
+  void _mostrarReasignar(BuildContext context, WidgetRef ref, MesaJrv mesa) {
     showDialog(
       context: context,
       builder: (ctx) => _DialogoReasignar(mesa: mesa, ref: ref),
@@ -634,8 +634,7 @@ class _FilaActaCoordinador extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Icon(
@@ -643,9 +642,7 @@ class _FilaActaCoordinador extends StatelessWidget {
                   ? Icons.check_circle_outline
                   : Icons.radio_button_unchecked,
               size: 18,
-              color: registrada
-                  ? Colors.green.shade600
-                  : Colors.grey.shade400,
+              color: registrada ? _Tema.success : _Tema.greyLight,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -658,8 +655,7 @@ class _FilaActaCoordinador extends StatelessWidget {
                   if (acta?.gpsLat != null)
                     Text(
                       'GPS: ${acta!.gpsLat!.toStringAsFixed(5)}, ${acta!.gpsLng!.toStringAsFixed(5)}',
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 10, color: _Tema.greyLight),
                     ),
                 ],
               ),
@@ -667,11 +663,9 @@ class _FilaActaCoordinador extends StatelessWidget {
             _BadgeEstadoActa(acta: acta),
             const SizedBox(width: 8),
             Icon(
-              registrada
-                  ? Icons.edit_outlined
-                  : Icons.add_circle_outline,
+              registrada ? Icons.edit_outlined : Icons.add_circle_outline,
               size: 16,
-              color: const Color(0xFF1B5E20),
+              color: _Tema.primary,
             ),
           ],
         ),
@@ -687,33 +681,29 @@ class _BadgeEstadoActa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (acta == null) {
-      return _badge('Pendiente', Colors.orange.shade700,
-          Colors.orange.shade50, Colors.orange.shade200);
+      return _badge('Pendiente', _Tema.warningColor, _Tema.warningContainer,
+          _Tema.warningColor.withOpacity(0.3));
     }
     return switch (acta!.estado) {
-      EstadoActa.ingresada => _badge('Ingresada', Colors.blue.shade700,
-          Colors.blue.shade50, Colors.blue.shade200),
-      EstadoActa.revisada => _badge('Revisada', Colors.green.shade700,
-          Colors.green.shade50, Colors.green.shade200),
-      EstadoActa.conNovedad => _badge('Con novedad', Colors.red.shade700,
-          Colors.red.shade50, Colors.red.shade200),
+      EstadoActa.ingresada => _badge(
+          'Ingresada', _Tema.primary, _Tema.surfaceContainerLow, _Tema.outline),
+      EstadoActa.revisada => _badge('Revisada', _Tema.success,
+          _Tema.successContainer, _Tema.success.withOpacity(0.3)),
+      EstadoActa.conNovedad => _badge('Con novedad', _Tema.errorColor,
+          _Tema.errorContainer, _Tema.errorColor.withOpacity(0.3)),
     };
   }
 
-  Widget _badge(String label, Color color, Color bg, Color border) =>
-      Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+  Widget _badge(String label, Color color, Color bg, Color border) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(color: border),
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 10,
-                color: color,
-                fontWeight: FontWeight.w500)),
+                fontSize: 10, color: color, fontWeight: FontWeight.w500)),
       );
 }
 
@@ -726,8 +716,7 @@ class _DialogoReasignar extends ConsumerStatefulWidget {
   const _DialogoReasignar({required this.mesa, required this.ref});
 
   @override
-  ConsumerState<_DialogoReasignar> createState() =>
-      _DialogoReasignarState();
+  ConsumerState<_DialogoReasignar> createState() => _DialogoReasignarState();
 }
 
 class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
@@ -741,18 +730,15 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
     return AlertDialog(
       title: Text(
         'Reasignar veedor — Mesa ${widget.mesa.numeroMesa}',
-        style:
-            const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
       content: veedoresAsync.when(
         loading: () => const SizedBox(
-            height: 60,
-            child: Center(child: CircularProgressIndicator())),
+            height: 60, child: Center(child: CircularProgressIndicator())),
         error: (e, _) => Text('Error: $e'),
         data: (veedores) {
           if (veedores.isEmpty) {
-            return const Text(
-                'No hay veedores disponibles en este recinto.',
+            return const Text('No hay veedores disponibles en este recinto.',
                 style: TextStyle(fontSize: 13));
           }
           return DropdownButtonFormField<String>(
@@ -776,8 +762,7 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar')),
         FilledButton(
-          style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1B5E20)),
+          style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
           onPressed: _veedorSeleccionado == null
               ? null
               : () async {
@@ -787,10 +772,10 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content:
-                              Text('Veedor reasignado correctamente'),
-                          backgroundColor: Colors.green,
+                              const Text('Veedor reasignado correctamente'),
+                          backgroundColor: _Tema.success,
                         ),
                       );
                     }
@@ -798,7 +783,7 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text('Error: $e'),
-                          backgroundColor: Colors.red));
+                          backgroundColor: _Tema.errorColor));
                     }
                   }
                 },
@@ -823,25 +808,22 @@ class _SinMesasView extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(Icons.inbox_outlined,
-                size: 64, color: Colors.grey.shade300),
+            Icon(Icons.inbox_outlined, size: 64, color: _Tema.greyLight),
             const SizedBox(height: 16),
             Text('Sin mesas registradas',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600)),
+                    color: _Tema.onSurfaceVariant)),
             const SizedBox(height: 8),
             Text('Agrega las mesas de este recinto.',
-                style: TextStyle(
-                    fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 13, color: _Tema.greyLight)),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onAgregar,
               icon: const Icon(Icons.add),
               label: const Text('Agregar mesa'),
-              style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20)),
+              style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
             ),
           ],
         ),
@@ -874,12 +856,11 @@ class _CampoForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: ctrl,
-      keyboardType: keyboard ??
-          (digitsOnly ? TextInputType.number : TextInputType.text),
+      keyboardType:
+          keyboard ?? (digitsOnly ? TextInputType.number : TextInputType.text),
       inputFormatters: [
         if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-        if (maxLength != null)
-          LengthLimitingTextInputFormatter(maxLength),
+        if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
       ],
       decoration: InputDecoration(
         labelText: label,

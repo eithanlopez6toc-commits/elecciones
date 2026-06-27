@@ -9,6 +9,25 @@ import '../controller/login_controller.dart';
 import 'veedor_providers.dart';
 import 'acta_form_screen.dart';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM — Democracy Core
+// ═════════════════════════════════════════════════════════════════════════════
+class _Tema {
+  static const primary = Color(0xFF003EC7);
+  static const outline = Color(0xFFE2E8F0);
+  static const cardRadius = 8.0;
+  static const background = Color(0xFFFAF8FF);
+  static const surfaceContainerLow = Color(0xFFF2F3FF);
+  static const onSurfaceVariant = Color(0xFF434656);
+  static const greyLight = Color(0xFFC3C5D9);
+  static const success = Color(0xFF006C49);
+  static const successContainer = Color(0xFFE8F5E9);
+  static const errorColor = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+  static const warningColor = Color(0xFF9C6B00);
+  static const warningContainer = Color(0xFFFFF3E0);
+}
+
 class VeedorPanelScreen extends ConsumerWidget {
   const VeedorPanelScreen({super.key});
 
@@ -22,9 +41,9 @@ class VeedorPanelScreen extends ConsumerWidget {
     final mesasAsync = ref.watch(mesasVeedorProvider(usuario.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F3F9),
+      backgroundColor: _Tema.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
+        backgroundColor: _Tema.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Column(
@@ -55,7 +74,7 @@ class VeedorPanelScreen extends ConsumerWidget {
       ),
       body: mesasAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+          child: CircularProgressIndicator(color: _Tema.primary),
         ),
         error: (e, _) => _ErrorView(
           mensaje: e.toString(),
@@ -66,7 +85,7 @@ class VeedorPanelScreen extends ConsumerWidget {
             return const _SinMesasView();
           }
           return RefreshIndicator(
-            color: const Color(0xFF1A237E),
+            color: _Tema.primary,
             onRefresh: () async =>
                 ref.invalidate(mesasVeedorProvider(usuario.id)),
             child: ListView(
@@ -107,7 +126,7 @@ class _ResumenBanner extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+          colors: [_Tema.primary, _Tema.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -117,7 +136,8 @@ class _ResumenBanner extends ConsumerWidget {
         loading: () => const SizedBox(
           height: 48,
           child: Center(
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            child:
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
           ),
         ),
         error: (_, __) => const SizedBox.shrink(),
@@ -224,32 +244,25 @@ class _TarjetaMesa extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(_Tema.cardRadius),
+        border: Border.all(color: _Tema.outline, width: 1),
       ),
       child: Column(
         children: [
           // Encabezado de la mesa
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8EAF6),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+            decoration: BoxDecoration(
+              color: _Tema.surfaceContainerLow,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8.0),
+                topRight: Radius.circular(8.0),
               ),
             ),
             child: Row(
               children: [
                 const Icon(Icons.table_restaurant_outlined,
-                    size: 16, color: Color(0xFF1A237E)),
+                    size: 16, color: _Tema.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -257,7 +270,7 @@ class _TarjetaMesa extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A237E),
+                      color: _Tema.primary,
                     ),
                   ),
                 ),
@@ -384,8 +397,8 @@ class _FilaActa extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(12),
-        bottomRight: Radius.circular(12),
+        bottomLeft: Radius.circular(8.0),
+        bottomRight: Radius.circular(8.0),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -395,16 +408,14 @@ class _FilaActa extends StatelessWidget {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: registrada
-                    ? Colors.green.shade50
-                    : const Color(0xFFF3F4FD),
+                    ? _Tema.successContainer
+                    : _Tema.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icono,
                 size: 18,
-                color: registrada
-                    ? Colors.green.shade600
-                    : const Color(0xFF5C6BC0),
+                color: registrada ? _Tema.success : _Tema.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -426,9 +437,7 @@ class _FilaActa extends StatelessWidget {
                         : 'Pendiente — toca para registrar',
                     style: TextStyle(
                       fontSize: 11,
-                      color: registrada
-                          ? Colors.green.shade600
-                          : Colors.grey.shade500,
+                      color: registrada ? _Tema.success : _Tema.greyLight,
                     ),
                   ),
                 ],
@@ -439,9 +448,7 @@ class _FilaActa extends StatelessWidget {
             Icon(
               registrada ? Icons.edit_outlined : Icons.add_circle_outline,
               size: 18,
-              color: registrada
-                  ? const Color(0xFF1A237E)
-                  : Colors.grey.shade400,
+              color: registrada ? _Tema.primary : _Tema.greyLight,
             ),
           ],
         ),
@@ -460,15 +467,15 @@ class _BadgeEstado extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: Colors.orange.shade200),
+          color: _Tema.warningContainer,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: _Tema.warningColor.withOpacity(0.3)),
         ),
         child: Text(
           'Pendiente',
           style: TextStyle(
               fontSize: 10,
-              color: Colors.orange.shade700,
+              color: _Tema.warningColor,
               fontWeight: FontWeight.w500),
         ),
       );
@@ -476,21 +483,21 @@ class _BadgeEstado extends StatelessWidget {
 
     final (color, bg, borde, label) = switch (acta!.estado) {
       EstadoActa.ingresada => (
-          Colors.blue.shade700,
-          Colors.blue.shade50,
-          Colors.blue.shade200,
+          _Tema.primary,
+          _Tema.surfaceContainerLow,
+          _Tema.outline,
           'Ingresada'
         ),
       EstadoActa.revisada => (
-          Colors.green.shade700,
-          Colors.green.shade50,
-          Colors.green.shade200,
+          _Tema.success,
+          _Tema.successContainer,
+          _Tema.success.withOpacity(0.3),
           'Revisada'
         ),
       EstadoActa.conNovedad => (
-          Colors.red.shade700,
-          Colors.red.shade50,
-          Colors.red.shade200,
+          _Tema.errorColor,
+          _Tema.errorContainer,
+          _Tema.errorColor.withOpacity(0.3),
           'Con novedad'
         ),
     };
@@ -499,7 +506,7 @@ class _BadgeEstado extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: borde),
       ),
       child: Text(
@@ -525,20 +532,20 @@ class _SinMesasView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.inbox_outlined, size: 64, color: _Tema.greyLight),
             const SizedBox(height: 16),
             Text(
               'Sin mesas asignadas',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600),
+                  color: _Tema.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             Text(
               'Contacta al coordinador de recinto para que te asigne una mesa.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: _Tema.greyLight),
             ),
           ],
         ),
@@ -562,28 +569,27 @@ class _ErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.wifi_off_outlined,
-                size: 48, color: Colors.red.shade300),
+                size: 48, color: _Tema.errorColor.withOpacity(0.5)),
             const SizedBox(height: 16),
             Text(
               'Error al cargar mesas',
               style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700),
+                  color: _Tema.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             Text(
               mensaje,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 12, color: _Tema.greyLight),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 16),
               label: const Text('Reintentar'),
-              style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E)),
+              style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
             ),
           ],
         ),

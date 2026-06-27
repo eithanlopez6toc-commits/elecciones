@@ -109,7 +109,6 @@ class VotosCandidato {
   final String dignidad;
   final String organizacion;
   final int totalVotos;
-  // Campo opcional para filtrar por recinto en el dashboard
   final String? recintoNombre;
 
   const VotosCandidato({
@@ -180,14 +179,14 @@ final mesasDeRecintoProvProv =
       .toList();
 });
 
-// ─── Crear recinto (ahora incluye numJrv) ────────────────────────────────────
+// ─── Crear recinto ────────────────────────────────────────────────────────────
 final crearRecintoProvider = Provider<
     Future<Recinto> Function(
       String canton,
       String parroquia,
       String nombre,
       String? direccion,
-      int numJrv, // ← NUEVO
+      int numJrv,
     )>((ref) {
   return (canton, parroquia, nombre, direccion, numJrv) async {
     final supabase = ref.read(supabaseClientProvider);
@@ -198,7 +197,7 @@ final crearRecintoProvider = Provider<
           'parroquia': parroquia,
           'nombre': nombre,
           'provincia': 'Ecuador',
-          'num_jrv': numJrv, // ← NUEVO
+          'num_jrv': numJrv,
           if (direccion != null) 'direccion': direccion,
         })
         .select()
@@ -207,27 +206,37 @@ final crearRecintoProvider = Provider<
   };
 });
 
-// ─── Crear coordinador de recinto (ahora incluye correo) ─────────────────────
+// ─── Crear coordinador de recinto ─────────────────────────────────────────────
 final crearCoordinadorRecintoProvider = Provider<
     Future<void> Function(
       String cedula,
-      String nombres,
-      String apellidos,
+      String nombre,
+      String apellido,
       String telefono,
-      String correo, // ← NUEVO
+      String correo,
       int recintoId,
     )>((ref) {
-  return (cedula, nombres, apellidos, telefono, correo, recintoId) async {
+  return (cedula, nombre, apellido, telefono, correo, recintoId) async {
     final supabase = ref.read(supabaseClientProvider);
-    await supabase.functions.invoke('crear-usuario', body: {
+
+    final response = await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
-      'nombres': nombres,
-      'apellidos': apellidos,
+      'nombres': nombre,
+      'apellido': apellido,
       'telefono': telefono,
-      'correo': correo, // ← NUEVO
+      'correo': correo,
       'rol': 'coordinador_recinto',
       'recinto_id': recintoId,
     });
+
+    // ▼ Si la Edge Function devuelve error, lo lanzamos para que
+    //   el catch del formulario lo muestre en el SnackBar
+    if (response.status != 200) {
+      final mensaje = response.data?['error'] ??
+          response.data?['message'] ??
+          'Error desconocido (status ${response.status})';
+      throw Exception(mensaje);
+    }
   };
 });
 
@@ -242,4 +251,11 @@ final coordinadoresRecintoProvider = FutureProvider<List<Usuario>>((ref) async {
   return (res as List)
       .map((r) => UsuarioModel.fromMap(r as Map<String, dynamic>, correo: ''))
       .toList();
+});
+
+// ─── Conteo global de actas ingresadas ───────────────────────────────────────
+final actasGlobalCountProvider = FutureProvider<int>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase.from(SupabaseConstants.actasTable).select('id');
+  return (res as List).length;
 });

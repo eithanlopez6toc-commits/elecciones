@@ -127,14 +127,14 @@ final crearMesaProvider = Provider<
 // ─── Crear cuenta de veedor ───────────────────────────────────────────────────
 // Llama a una Edge Function de Supabase para crear el usuario en auth + perfil
 final crearVeedorProvider = Provider<
-    Future<void> Function(String cedula, String nombres, String apellidos,
+    Future<void> Function(String cedula, String nombres, String apellido,
         String telefono, String correo, int mesaId)>((ref) {
-  return (cedula, nombres, apellidos, telefono, correo, mesaId) async {
+  return (cedula, nombres, apellido, telefono, correo, mesaId) async {
     final supabase = ref.read(supabaseClientProvider);
     await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
       'nombres': nombres,
-      'apellidos': apellidos,
+      'apellido': apellido,
       'telefono': telefono,
       'correo': correo,
       'rol': 'veedor',

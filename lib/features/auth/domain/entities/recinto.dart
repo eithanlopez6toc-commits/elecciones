@@ -6,6 +6,7 @@ class Recinto {
   final String canton;
   final String parroquia;
   final String? direccion;
+  final int numMesas;
 
   Recinto({
     required this.id,
@@ -14,5 +15,6 @@ class Recinto {
     required this.canton,
     required this.parroquia,
     this.direccion,
+    this.numMesas = 0,
   });
 }

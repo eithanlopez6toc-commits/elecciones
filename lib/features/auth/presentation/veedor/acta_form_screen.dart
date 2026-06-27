@@ -10,6 +10,26 @@ import '../../domain/entities/organizacion_politica.dart';
 import 'acta_form_controller.dart';
 import '../../domain/entities/acta.dart';
 
+// ═════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM — Democracy Core
+// ═════════════════════════════════════════════════════════════════════════════
+class _Tema {
+  static const primary = Color(0xFF003EC7);
+  static const outline = Color(0xFFE2E8F0);
+  static const cardRadius = 8.0;
+  static const background = Color(0xFFFAF8FF);
+  static const surfaceContainerLow = Color(0xFFF2F3FF);
+  static const onSurface = Color(0xFF131B2E);
+  static const onSurfaceVariant = Color(0xFF434656);
+  static const greyLight = Color(0xFFC3C5D9);
+  static const success = Color(0xFF006C49);
+  static const successContainer = Color(0xFFE8F5E9);
+  static const errorColor = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+  static const warningColor = Color(0xFF9C6B00);
+  static const warningContainer = Color(0xFFFFF3E0);
+}
+
 class ActaFormScreen extends ConsumerStatefulWidget {
   final int mesaId;
   final String mesaNombre;
@@ -56,8 +76,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     );
 
     // Precargar valores si es edición
-    final votosExistentes =
-        widget.actaExistente?.votosPorOrganizacion ?? {};
+    final votosExistentes = widget.actaExistente?.votosPorOrganizacion ?? {};
 
     _ctrlOrg = {
       for (final o in widget.organizaciones)
@@ -111,10 +130,11 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                 ? 'Acta actualizada correctamente'
                 : 'Acta registrada correctamente',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: _Tema.success,
         ),
       );
-      Navigator.of(context).pop(true); // retorna true para que el panel refresque
+      Navigator.of(context)
+          .pop(true); // retorna true para que el panel refresque
     }
   }
 
@@ -127,7 +147,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.error!),
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: _Tema.errorColor,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -135,9 +155,9 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: _Tema.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
+        backgroundColor: _Tema.primary,
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +181,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade300,
-                    borderRadius: BorderRadius.circular(5),
+                    color: _Tema.warningColor,
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
                     'Editando',
@@ -223,7 +243,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E),
+                  backgroundColor: _Tema.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
@@ -287,9 +307,13 @@ class _CardInfoMesa extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: _Campo(label: 'Recinto', valor: recinto, disabled: true)),
+              Expanded(
+                  child:
+                      _Campo(label: 'Recinto', valor: recinto, disabled: true)),
               const SizedBox(width: 8),
-              Expanded(child: _Campo(label: 'Mesa / JRV', valor: mesa, disabled: true)),
+              Expanded(
+                  child:
+                      _Campo(label: 'Mesa / JRV', valor: mesa, disabled: true)),
             ],
           ),
           const SizedBox(height: 8),
@@ -340,26 +364,25 @@ class _CardVotos extends StatelessWidget {
                 child: _FilaVotos(
                   label: '${org.listaNumero}. ${org.nombre}',
                   controller: ctrlOrg[org.id]!,
-                  color: const Color(0xFFE8EAF6),
-                  textColor: const Color(0xFF1A237E),
-                  onChanged: (v) =>
-                      onOrgChanged(org.id, int.tryParse(v) ?? 0),
+                  color: _Tema.surfaceContainerLow,
+                  textColor: _Tema.primary,
+                  onChanged: (v) => onOrgChanged(org.id, int.tryParse(v) ?? 0),
                 ),
               )),
           const Divider(height: 16),
           _FilaVotos(
             label: 'Votos nulos',
             controller: ctrlNulos,
-            color: const Color(0xFFFFF3E0),
-            textColor: const Color(0xFFE65100),
+            color: _Tema.warningContainer,
+            textColor: _Tema.warningColor,
             onChanged: (v) => onNulosChanged(int.tryParse(v) ?? 0),
           ),
           const SizedBox(height: 8),
           _FilaVotos(
             label: 'Votos blancos',
             controller: ctrlBlancos,
-            color: const Color(0xFFF3E5F5),
-            textColor: const Color(0xFF6A1B9A),
+            color: _Tema.surfaceContainerLow,
+            textColor: _Tema.primary,
             onChanged: (v) => onBlancosChanged(int.tryParse(v) ?? 0),
           ),
           const Divider(height: 16),
@@ -367,8 +390,7 @@ class _CardVotos extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total contabilizado',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               Text(
                 '${state.totalContabilizado} / ${state.totalSufragantes}',
                 style: TextStyle(
@@ -386,8 +408,7 @@ class _CardVotos extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Consistencia',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               _BadgeConsistencia(esConsistente: state.esConsistente),
             ],
           ),
@@ -418,8 +439,7 @@ class _FilaVotos extends StatelessWidget {
         Expanded(
           flex: 3,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(6),
@@ -451,13 +471,11 @@ class _FilaVotos extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(6),
-                borderSide:
-                    BorderSide(color: Colors.grey.shade300, width: 0.5),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 0.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(6),
-                borderSide:
-                    BorderSide(color: Colors.grey.shade300, width: 0.5),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 0.5),
               ),
               filled: true,
               fillColor: Colors.white,
@@ -478,17 +496,15 @@ class _BadgeConsistencia extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: esConsistente ? Colors.green.shade50 : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(5),
+        color: esConsistente ? _Tema.successContainer : _Tema.errorContainer,
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         esConsistente ? '✓ Consistente' : '✗ Inconsistente',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          color: esConsistente
-              ? Colors.green.shade700
-              : Colors.red.shade700,
+          color: esConsistente ? _Tema.success : _Tema.errorColor,
         ),
       ),
     );
@@ -568,8 +584,8 @@ class _CardFoto extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(5),
@@ -602,24 +618,24 @@ class _CardFoto extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 28),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: const Color(0xFF9FA8DA),
+                    color: _Tema.outline,
                     width: 1.5,
                     style: BorderStyle.solid,
                   ),
                   borderRadius: BorderRadius.circular(10),
-                  color: const Color(0xFFF3F4FD),
+                  color: _Tema.surfaceContainerLow,
                 ),
                 child: const Column(
                   children: [
                     Icon(Icons.add_a_photo_outlined,
-                        size: 36, color: Color(0xFF5C6BC0)),
+                        size: 36, color: _Tema.primary),
                     SizedBox(height: 8),
                     Text(
                       'Tomar foto del acta',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF5C6BC0),
+                        color: _Tema.primary,
                       ),
                     ),
                     SizedBox(height: 4),
@@ -684,8 +700,8 @@ class _CardGps extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF9FA8DA)),
-                foregroundColor: const Color(0xFF1A237E),
+                side: const BorderSide(color: _Tema.outline),
+                foregroundColor: _Tema.primary,
               ),
               onPressed: cargando ? null : onObtener,
               icon: cargando
@@ -707,8 +723,7 @@ class _CardGps extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'Se captura automáticamente al abrir el formulario',
-                style:
-                    TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ],
           ),
@@ -726,7 +741,8 @@ class _Seccion extends StatelessWidget {
   final IconData icono;
   final Widget child;
 
-  const _Seccion({required this.titulo, required this.icono, required this.child});
+  const _Seccion(
+      {required this.titulo, required this.icono, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -742,7 +758,7 @@ class _Seccion extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: const BoxDecoration(
-              color: Color(0xFFE8EAF6),
+              color: _Tema.surfaceContainerLow,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(10),
                 topRight: Radius.circular(10),
@@ -750,14 +766,14 @@ class _Seccion extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(icono, size: 16, color: const Color(0xFF1A237E)),
+                Icon(icono, size: 16, color: _Tema.primary),
                 const SizedBox(width: 8),
                 Text(
                   titulo,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A237E),
+                    color: _Tema.primary,
                   ),
                 ),
               ],

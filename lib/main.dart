@@ -19,9 +19,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: SupabaseConstants.url,
-    anonKey: SupabaseConstants.anonKey,
+    publishableKey: SupabaseConstants.anonKey,
     authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.implicit, // ← flujo implícito: manda tokens directo
+      authFlowType:
+          AuthFlowType.implicit, // ← flujo implícito: manda tokens directo
     ),
   );
   runApp(const ProviderScope(child: ControlElectoralApp()));
@@ -70,8 +71,35 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
     final refreshToken = params['refresh_token'];
     final type = params['type'];
 
-    debugPrint('📦 Params → type=$type, accessToken=${accessToken != null}, refreshToken=${refreshToken != null}');
+    debugPrint(
+        '📦 Params → type=$type, accessToken=${accessToken != null}, refreshToken=${refreshToken != null}');
 
+    if (!mounted) return;
+
+    // ── 'magiclink' = correo de ACTIVACIÓN de cuenta nueva (crear-usuario) ──
+    // NO logueamos automáticamente. Solo mandamos al login para que el
+    // usuario ingrese manualmente con la contraseña temporal que se le envió.
+    // Desde el login, la lógica existente (usuario.debeCambiarPassword) ya
+    // lo redirige a /cambiar-password después de autenticarse.
+    if (type == 'magiclink') {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+      final ctx = navigatorKey.currentState?.overlay?.context;
+      if (ctx != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+          content: Text(
+              '✅ Cuenta activada. Ingresa con la contraseña temporal que recibiste.'),
+          backgroundColor: Color(0xFF039855),
+          duration: Duration(seconds: 4),
+        ));
+      }
+      return;
+    }
+
+    // ── 'recovery' / 'invite' = sí necesitan sesión temporal para poder
+    //    cambiar la contraseña sin volver a loguearse ──
     if (accessToken == null || refreshToken == null) {
       debugPrint('⚠️ Faltan tokens en el deep link.');
       return;
@@ -357,8 +385,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFEF3F2),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: const Color(0xFFFECDCA)),
+                                border:
+                                    Border.all(color: const Color(0xFFFECDCA)),
                               ),
                               child: Row(
                                 children: [
@@ -501,8 +529,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
+            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
     );
   }
@@ -534,8 +561,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
+            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
       items: const ['Coordinador Provincial', 'Coordinador Recinto', 'Veedor']
           .map((value) => DropdownMenuItem<String>(
