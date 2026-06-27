@@ -4,7 +4,7 @@ class CedulaValidator {
   /// Requiere 10 dígitos y aplica la regla de verificación.
   static bool isValid(String cedula) {
     final sanitized = cedula.trim();
-    if (!RegExp(r'^\d{10}\$').hasMatch(sanitized)) return false;
+    if (!RegExp(r'^\d{10}$').hasMatch(sanitized)) return false;
 
     final digits = sanitized.split('').map(int.parse).toList();
     final province = int.parse(sanitized.substring(0, 2));

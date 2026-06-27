@@ -1,52 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'core/constants/supabase_constants.dart';
-import 'features/auth/domain/entities/usuario.dart';
-import 'features/auth/presentation/controller/login_controller.dart';
-import 'features/auth/presentation/veedor/veedor_panel_screen.dart';
-import 'features/auth/presentation/auth/olvide_password_screen.dart';
-import 'features/auth/presentation/auth/cambiar_password_screen.dart';
-import 'features/auth/presentation/coordinador_provincial/coordinador_provincial_panel_screen.dart';
-import 'features/auth/presentation/coordinador_recinto/coordinador_recinto_panel_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: SupabaseConstants.url,
-    publishableKey: SupabaseConstants.anonKey,
-  );
-  runApp(const ControlElectoralApp());
-}
-
-class ControlElectoralApp extends StatelessWidget {
-  const ControlElectoralApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp(
-        title: 'Control Electoral',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: 'Inter',
-        ),
-        home: const LoginScreen(),
-        // ─── REGISTRO DE RUTAS NOMBRADAS ─────────────────────────────────────
-        routes: {
-          '/veedor': (_) => const VeedorPanelScreen(),
-          '/olvide-password': (_) => const OlvidePasswordScreen(),
-          '/cambiar-password': (_) => const CambiarPasswordScreen(),
-          '/provincial': (_) => const CoordinadorProvincialPanelScreen(),
-          '/coordinador-recinto': (_) => const CoordinadorRecintoPanelScreen(),
-        },
-      ),
-    );
-  }
-}
+import '../controller/login_controller.dart';
+import '../../domain/entities/usuario.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -62,6 +18,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _obscurePassword = true;
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
+
+  // NUEVO: Variable para manejar el rol seleccionado (Simulado o adaptado a tu lógica si es necesario)
   String? _selectedRol;
 
   @override
@@ -83,52 +41,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
-  RolUsuario _rolDesdeDropdown(String rol) {
-    switch (rol) {
-      case 'Coordinador Provincial':
-        return RolUsuario.coordinadorProvincial;
-      case 'Coordinador Recinto':
-        return RolUsuario.coordinadorRecinto;
-      case 'Veedor':
-      default:
-        return RolUsuario.veedor;
-    }
-  }
-
   Future<void> _onLoginPressed() async {
     FocusScope.of(context).unfocus();
 
-    if (_selectedRol == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona tu rol antes de continuar.'),
-          backgroundColor: Color(0xFFD92D20),
-        ),
-      );
-      return;
-    }
-
     final usuario = await ref
         .read(loginControllerProvider.notifier)
-        .login(_cedulaCtrl.text.trim(), _passwordCtrl.text);
+        .login(
+          _cedulaCtrl.text.trim(),
+          _passwordCtrl.text,
+        );
 
     if (!mounted || usuario == null) return;
-
-    final rolEsperado = _rolDesdeDropdown(_selectedRol!);
-
-    if (usuario.rol != rolEsperado) {
-      await ref.read(loginControllerProvider.notifier).logout();
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El rol seleccionado no corresponde a tu cuenta.'),
-          backgroundColor: Color(0xFFD92D20),
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
 
     if (usuario.debeCambiarPassword) {
       Navigator.of(context).pushReplacementNamed('/cambiar-password');
@@ -139,9 +62,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       case RolUsuario.coordinadorProvincial:
         Navigator.of(context).pushReplacementNamed('/provincial');
         break;
+
       case RolUsuario.coordinadorRecinto:
         Navigator.of(context).pushReplacementNamed('/coordinador-recinto');
         break;
+
       case RolUsuario.veedor:
         Navigator.of(context).pushReplacementNamed('/veedor');
         break;
@@ -154,9 +79,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FC),
+      // Fondo ultra claro con textura de puntos sutil (Color base del mockup)
+      backgroundColor: const Color(0xFFF8F9FC), 
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.dark, // Íconos de la barra de estado oscuros
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
@@ -167,6 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Card Principal Contenedor del Login
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -181,15 +108,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          // Header con el Escudo/Check y Texto Voter Portal
                           Row(
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Icons.verified_user_outlined,
                                 color: Color(0xFF3422CD),
                                 size: 22,
                               ),
-                              SizedBox(width: 8),
-                              Text(
+                              const SizedBox(width: 8),
+                              const Text(
                                 'Voter Portal',
                                 style: TextStyle(
                                   color: Color(0xFF3422CD),
@@ -200,6 +128,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ],
                           ),
                           const SizedBox(height: 32),
+
+                          // Ícono central flotante del mockup
                           Container(
                             width: 64,
                             height: 64,
@@ -214,6 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 24),
+
+                          // Título y Subtítulo
                           const Text(
                             'Acceda a su portal de votación',
                             textAlign: TextAlign.center,
@@ -235,10 +167,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 32),
+
+                          // --- FORMULARIO DE ENTRADA ---
+                          
+                          // 1. Dropdown de Selección de Rol
                           _buildLabel('Seleccionar Rol'),
                           const SizedBox(height: 6),
                           _buildDropdownField(),
                           const SizedBox(height: 20),
+
+                          // 2. ID de Usuario (Cédula)
                           _buildLabel('ID del Usuario'),
                           const SizedBox(height: 6),
                           _buildTextField(
@@ -252,6 +190,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ],
                           ),
                           const SizedBox(height: 20),
+
+                          // 3. Contraseña + Enlace "¿Olvidó su contraseña?" alineados
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -285,11 +225,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 size: 20,
                               ),
                               onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           const SizedBox(height: 24),
+
+                          // Manejo de Error de tu lógica original
                           if (state.hasError)
                             Container(
                               margin: const EdgeInsets.only(bottom: 16),
@@ -297,30 +238,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFEF3F2),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFFECDCA),
-                                ),
+                                border: Border.all(color: const Color(0xFFFECDCA)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    color: Color(0xFFD92D20),
-                                    size: 18,
-                                  ),
+                                  const Icon(Icons.error_outline,
+                                      color: Color(0xFFD92D20), size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       _mensajeError('${state.error}'),
                                       style: const TextStyle(
-                                        color: Color(0xFFB42318),
-                                        fontSize: 13,
-                                      ),
+                                          color: Color(0xFFB42318),
+                                          fontSize: 13),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+
+                          // Botón Iniciar Sesión (Azul/Violeta Eléctrico de la captura)
                           SizedBox(
                             width: double.infinity,
                             height: 48,
@@ -336,8 +273,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF2B1CB1),
                                       elevation: 2,
-                                      shadowColor: const Color(0xFF3422CD)
-                                          .withOpacity(0.3),
+                                      shadowColor: const Color(0xFF3422CD).withOpacity(0.3),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -353,6 +289,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                           ),
                           const SizedBox(height: 20),
+
+                          // Opción de registrarse/solicitar acceso adaptada al estilo claro
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -380,26 +318,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
+                    // --- BANNER DE INFORMACIÓN INFERIOR (Verde Menta del Mockup) ---
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD1FADF),
+                        color: const Color(0xFFD1FADF), // Fondo menta exacto
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: const Color(0xFF6EE7B7).withOpacity(0.5),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.info,
                             color: Color(0xFF065F46),
                             size: 20,
                           ),
-                          SizedBox(width: 12),
-                          Expanded(
+                          const SizedBox(width: 12),
+                          const Expanded(
                             child: Text(
                               'Este sistema utiliza encriptación de grado militar y autenticación de dos factores para proteger su integridad democrática.',
                               style: TextStyle(
@@ -423,6 +364,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
+  // Helper para las etiquetas oscuras del diseño claro
   Widget _buildLabel(String text) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -437,6 +379,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
+  // Input fields limpios con bordes grises y focus violeta
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -459,10 +402,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
@@ -479,34 +419,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
+  // Selector de Rol Estilizado (Dropdown) según la captura
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
       value: _selectedRol,
       hint: Row(
         children: const [
-          Icon(
-            Icons.account_circle_outlined,
-            color: Color(0xFF667085),
-            size: 20,
-          ),
+          Icon(Icons.account_circle_outlined, color: Color(0xFF667085), size: 20),
           SizedBox(width: 10),
-          Text(
-            'Seleccionar un rol',
-            style: TextStyle(color: Color(0xFF98A2B3), fontSize: 14),
-          ),
+          Text('Seleccionar un rol', style: TextStyle(color: Color(0xFF98A2B3), fontSize: 14)),
         ],
       ),
-      icon: const Icon(
-        Icons.keyboard_arrow_down_rounded,
-        color: Color(0xFF667085),
-      ),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF667085)),
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
@@ -520,44 +448,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5),
         ),
       ),
-      items: const [
-        'Coordinador Provincial',
-        'Coordinador Recinto',
-        'Veedor',
-      ]
-          .map(
-            (value) => DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                style: const TextStyle(
-                  color: Color(0xFF101828),
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (value) => setState(() => _selectedRol = value),
+      items: <String>['Coordinador Provincial', 'Coordinador Recinto', 'Veedor']
+          .map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(value, style: const TextStyle(color: Color(0xFF101828), fontSize: 14)),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          _selectedRol = newValue;
+        });
+      },
     );
   }
 
   String _mensajeError(String error) {
-    if (error.contains('Cédula inválida')) {
-      return 'Cédula inválida. Verifica el número.';
-    }
-    if (error.contains('Invalid login credentials')) {
-      return 'Cédula o contraseña incorrectos.';
-    }
-    if (error.contains('rate_limit')) {
-      return 'Demasiados intentos. Espera un momento.';
-    }
-    if (error.contains('no registrado') || error.contains('not found')) {
-      return 'Usuario no registrado en el sistema.';
-    }
-    if (error.contains('Email not confirmed')) {
-      return 'Correo electrónico no confirmado. Revisa tu bandeja de entrada.';
-    }
-    return error; // muestra el error real para depuración
+    if (error.contains('Cédula inválida')) return 'Cédula inválida. Verifica el número.';
+    if (error.contains('Invalid credentials')) return 'Cédula o contraseña incorrectos.';
+    if (error.contains('rate_limit')) return 'Demasiados intentos. Espera un momento.';
+    if (error.contains('No se encontró un perfil')) return 'Usuario no registrado en el sistema.';
+    return 'Error al ingresar. Intenta de nuevo.';
   }
 }
