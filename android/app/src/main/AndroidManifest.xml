@@ -1,17 +1,28 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- ══════════════════════════════════════════════════════
-         PERMISOS — cámara y ubicación para el acta electoral
+         PERMISOS — cámara, ubicación e internet
          ══════════════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Internet: requerido para flutter_map (tiles OSM) y sync con backend -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Estado de red: requerido por connectivity_plus -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
         android:label="elecciones"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+        <!--
+          android:usesCleartextTraffic="true" permite que flutter_map cargue
+          tiles de OpenStreetMap (http). Si tu backend usa HTTPS puedes
+          restringirlo con un network_security_config en su lugar.
+        -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

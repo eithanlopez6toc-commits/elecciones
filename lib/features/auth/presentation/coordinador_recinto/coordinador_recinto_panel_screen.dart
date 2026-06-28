@@ -33,6 +33,94 @@ class _Tema {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// DIÁLOGOS REUTILIZABLES (error / éxito)
+// ═════════════════════════════════════════════════════════════════════════════
+void _mostrarErrorDialog(BuildContext context, String mensaje, {String titulo = 'Ocurrió un error'}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_Tema.cardRadius)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: _Tema.errorContainer, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.error_outline, color: _Tema.errorColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(titulo,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _Tema.onSurface)),
+          ),
+        ],
+      ),
+      content: Text(mensaje, style: const TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant, height: 1.4)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(
+              backgroundColor: _Tema.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+void _mostrarExitoDialog(BuildContext context, String mensaje, {VoidCallback? onClose}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_Tema.cardRadius)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: _Tema.successContainer, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.check_circle_outline, color: _Tema.success, size: 22),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text('Operación exitosa',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _Tema.onSurface)),
+          ),
+        ],
+      ),
+      content: Text(mensaje, style: const TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant, height: 1.4)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(
+              backgroundColor: _Tema.success,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+          onPressed: () {
+            Navigator.pop(ctx);
+            onClose?.call();
+          },
+          child: const Text('Continuar', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+String _mensajeAmigable(String error) {
+  final lower = error.toLowerCase();
+  if (lower.contains('cedula') || lower.contains('cédula')) {
+    return 'La cédula ingresada no es válida o ya está registrada.';
+  }
+  if (lower.contains('correo') || lower.contains('email')) {
+    return 'El correo ingresado no es válido o ya está en uso.';
+  }
+  if (lower.contains('duplicate') || lower.contains('unique')) {
+    return 'Ya existe un registro con estos datos.';
+  }
+  return error.replaceFirst('Exception: ', '');
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // PANTALLA PRINCIPAL
 // ═════════════════════════════════════════════════════════════════════════════
 class CoordinadorRecintoPanelScreen extends ConsumerStatefulWidget {
@@ -113,7 +201,7 @@ class _CoordinadorRecintoPanelScreenState
                 children: [
                   const Text('Portal Electoral Seguro',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _Tema.primary)),
-                  Text('Coordinador: ${usuario.nombres} ${usuario.apellidos}',
+                  Text('Coordinador del Recinto: ${usuario.nombres} ${usuario.apellidos}',
                       style: const TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant)),
                 ],
               ),
@@ -173,7 +261,8 @@ class _CoordinadorRecintoPanelScreenState
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB 1 — MESAS
+// TAB 1 — MESAS (solo lectura: ver mesas, estado de actas y mesas sin veedor)
+// La creación de mesas/JRV es responsabilidad del Coordinador Provincial.
 // ═════════════════════════════════════════════════════════════════════════════
 class _TabMesas extends ConsumerWidget {
   final int recintoId;
@@ -186,43 +275,31 @@ class _TabMesas extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final resumenAsync = ref.watch(resumenRecintoProvider(recintoId));
     final mesasAsync = ref.watch(mesasPorRecintoProvider(recintoId));
+    final veedoresAsync = ref.watch(veedoresDeRecintoProvider(recintoId));
 
     return RefreshIndicator(
       color: _Tema.primary,
       onRefresh: () async {
         ref.invalidate(resumenRecintoProvider(recintoId));
         ref.invalidate(mesasPorRecintoProvider(recintoId));
+        ref.invalidate(veedoresDeRecintoProvider(recintoId));
       },
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: _Tema.outline),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                  onPressed: onIrAVeedores,
-                  icon: const Icon(Icons.person_add_alt_1_outlined, size: 16),
-                  label: const Text('+ Veedor', style: TextStyle(fontSize: 12)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                      backgroundColor: _Tema.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                  onPressed: () => _dialogCrearMesa(context, ref, recintoId),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Nueva Mesa', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(44),
+                side: const BorderSide(color: _Tema.outline),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            onPressed: onIrAVeedores,
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 16),
+            label: const Text('Ir a Veedores', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 16),
+
+          // ── KPIs ────────────────────────────────────────────────────────
           resumenAsync.when(
             loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
             error: (e, _) => const SizedBox(),
@@ -248,6 +325,96 @@ class _TabMesas extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+
+          // ── APARTADO: Mesas sin veedor asignado ──────────────────────────
+          mesasAsync.when(
+            loading: () => const SizedBox(),
+            error: (e, _) => const SizedBox(),
+            data: (mesas) => veedoresAsync.when(
+              loading: () => const SizedBox(),
+              error: (e, _) => const SizedBox(),
+              data: (veedores) {
+                final mesaIdsConVeedor = veedores
+                    .where((v) => v.mesaId != null)
+                    .map((v) => v.mesaId)
+                    .toSet();
+                final mesasSinVeedor =
+                    mesas.where((m) => !mesaIdsConVeedor.contains(m.id)).toList();
+
+                if (mesasSinVeedor.isEmpty) return const SizedBox();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                          color: _Tema.warningContainer,
+                          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+                          border: Border.all(color: _Tema.warningColor.withOpacity(0.3))),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, size: 18, color: _Tema.warningColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Mesas sin veedor asignado (${mesasSinVeedor.length})',
+                                  style: const TextStyle(
+                                      fontSize: 13, fontWeight: FontWeight.bold, color: _Tema.warningColor),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Toca una mesa para asignarle un veedor disponible.',
+                            style: TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 10),
+                          ...mesasSinVeedor.map((m) => InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => showDialog(
+                                  context: context,
+                                  builder: (ctx) => _DialogoReasignar(mesa: m),
+                                ),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  decoration: BoxDecoration(
+                                      color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.how_to_vote_outlined, size: 16, color: _Tema.primary),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Mesa ${m.numeroMesa.toString().padLeft(3, '0')} — ${m.genero.dbValue}',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                      const Text('Asignar',
+                                          style: TextStyle(
+                                              fontSize: 11, color: _Tema.primary, fontWeight: FontWeight.bold)),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.chevron_right, size: 16, color: _Tema.primary),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          // ── Listado completo de mesas ─────────────────────────────────────
           const Text('Listado de Mesas',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _Tema.onSurfaceVariant)),
           const SizedBox(height: 8),
@@ -256,117 +423,16 @@ class _TabMesas extends ConsumerWidget {
             error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: _Tema.errorColor))),
             data: (mesas) {
               if (mesas.isEmpty) {
-                return _EmptyState(
+                return const _EmptyState(
                   icono: Icons.table_rows_outlined,
-                  mensaje: 'Sin mesas registradas',
-                  sub: 'Agrega la primera mesa usando el botón superior.',
-                  boton: 'Agregar mesa',
-                  onTap: () => _dialogCrearMesa(context, ref, recintoId),
+                  mensaje: 'Sin mesas asignadas',
+                  sub: 'El coordinador provincial aún no ha registrado mesas para este recinto.',
                 );
               }
               return Column(children: mesas.map((m) => _TarjetaMesa(mesa: m, usuario: usuario)).toList());
             },
           ),
         ],
-      ),
-    );
-  }
-
-  void _dialogCrearMesa(BuildContext context, WidgetRef ref, int recintoId) {
-    final ctrlNumero = TextEditingController();
-    GeneroMesa generoSeleccionado = GeneroMesa.unica;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: _Tema.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.8,
-          expand: false,
-          builder: (_, sc) => ListView(
-            controller: sc,
-            padding: const EdgeInsets.all(24),
-            children: [
-              const Center(child: Icon(Icons.table_rows_outlined, size: 40, color: _Tema.primary)),
-              const SizedBox(height: 12),
-              const Text('Nueva Mesa / JRV',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _Tema.onSurface)),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(_Tema.cardRadius),
-                    border: Border.all(color: _Tema.outline)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CampoLabel(icono: Icons.pin_outlined, texto: 'Número de mesa'),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: ctrlNumero,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: _inputDeco('Ej: 42'),
-                    ),
-                    const SizedBox(height: 16),
-                    _CampoLabel(icono: Icons.people_outline, texto: 'Género de mesa'),
-                    ...GeneroMesa.values.map((g) => RadioListTile<GeneroMesa>(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(g.dbValue, style: const TextStyle(fontSize: 13)),
-                          value: g,
-                          groupValue: generoSeleccionado,
-                          activeColor: _Tema.primary,
-                          onChanged: (v) => setS(() => generoSeleccionado = v!),
-                        )),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                    backgroundColor: _Tema.primary,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                onPressed: () async {
-                  final numero = int.tryParse(ctrlNumero.text.trim());
-                  if (numero == null) return;
-                  try {
-                    await ref.read(crearMesaProvider)(recintoId, numero, generoSeleccionado);
-                    ref.invalidate(mesasPorRecintoProvider(recintoId));
-                    ref.invalidate(resumenRecintoProvider(recintoId));
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text('Error: $e'), backgroundColor: _Tema.errorColor));
-                    }
-                  }
-                },
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.save_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Guardar Mesa', style: TextStyle(fontWeight: FontWeight.bold))
-                ]),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: _Tema.onSurfaceVariant,
-                    minimumSize: const Size.fromHeight(50),
-                    side: const BorderSide(color: _Tema.outline),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -399,7 +465,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
           border: Border.all(color: _expandida ? _Tema.primary.withOpacity(0.3) : _Tema.outline)),
       child: Column(
         children: [
-          // Cabecera siempre visible — toca para expandir
           InkWell(
             borderRadius: BorderRadius.vertical(
               top: const Radius.circular(_Tema.cardRadius),
@@ -438,7 +503,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
                       ],
                     ),
                   ),
-                  // Badge resumen de estado
                   actasAsync.when(
                     loading: () => const SizedBox(
                         width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
@@ -464,8 +528,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
               ),
             ),
           ),
-
-          // Contenido expandido — filas de actas con botón
           if (_expandida)
             actasAsync.when(
               loading: () => const Padding(
@@ -508,30 +570,36 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
 
   Future<void> _irAFormulario(
       BuildContext context, WidgetRef ref, Dignidad dignidad, Acta? actaExistente) async {
-    // Espera a que carguen las orgs (provider corregido en veedor_providers.dart)
-    final List<OrganizacionPolitica> orgs =
-        await ref.read(organizacionesPorDignidadProvider(dignidad).future);
+    try {
+      final List<OrganizacionPolitica> orgs =
+          await ref.read(organizacionesPorDignidadProvider(dignidad).future);
 
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ActaFormScreen(
-          mesaId: widget.mesa.id,
-          mesaNombre: widget.mesa.numeroMesa.toString(),
-          recintoNombre: 'Recinto ${widget.mesa.recintoId}',
-          dignidad: dignidad,
-          totalSufragantes: 300,
-          organizaciones: orgs,
-          userId: widget.usuario.id,
-          actaExistente: actaExistente,
+      if (!context.mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ActaFormScreen(
+            mesaId: widget.mesa.id,
+            mesaNombre: widget.mesa.numeroMesa.toString(),
+            recintoNombre: 'Recinto ${widget.mesa.recintoId}',
+            dignidad: dignidad,
+            totalSufragantes: 300,
+            organizaciones: orgs,
+            userId: widget.usuario.id,
+            actaExistente: actaExistente,
+          ),
         ),
-      ),
-    );
-    ref.invalidate(actasDeMesaProvider(widget.mesa.id));
-    ref.invalidate(resumenRecintoProvider(widget.mesa.recintoId));
+      );
+      ref.invalidate(actasDeMesaProvider(widget.mesa.id));
+      ref.invalidate(resumenRecintoProvider(widget.mesa.recintoId));
+    } catch (e) {
+      if (context.mounted) {
+        _mostrarErrorDialog(context, 'No se pudo abrir el formulario del acta.\n\n$e');
+      }
+    }
   }
 }
 
+// ── Fila de acta: SIN botón — toda la fila navega al formulario ─────────────
 class _FilaActa extends StatelessWidget {
   final String etiqueta;
   final Acta? acta;
@@ -542,46 +610,36 @@ class _FilaActa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final registrada = acta != null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(
-            registrada ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 20,
-            color: registrada ? _Tema.success : _Tema.greyLight,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(etiqueta,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.onSurface)),
-                if (acta?.gpsLat != null)
-                  const Text('GPS registrado',
-                      style: TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant)),
-              ],
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(
+              registrada ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 20,
+              color: registrada ? _Tema.success : _Tema.greyLight,
             ),
-          ),
-          _BadgeActa(acta: acta),
-          const SizedBox(width: 10),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: registrada ? _Tema.primary : _Tema.success,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(etiqueta,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.onSurface)),
+                  Text(
+                    registrada ? 'Toca para revisar / actualizar' : 'Toca para ingresar',
+                    style: const TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
-            onPressed: onTap,
-            icon: Icon(registrada ? Icons.edit_outlined : Icons.note_add_outlined, size: 14),
-            label: Text(
-              registrada ? 'Actualizar' : 'Ingresar',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
+            _BadgeActa(acta: acta),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 20, color: _Tema.greyLight),
+          ],
+        ),
       ),
     );
   }
@@ -609,7 +667,7 @@ class _BadgeActa extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB 2 — VEEDORES: lista + formulario inline
+// TAB 2 — VEEDORES: lista (disponibles / no disponibles) + formulario inline
 // ═════════════════════════════════════════════════════════════════════════════
 class _TabVeedores extends ConsumerStatefulWidget {
   final int recintoId;
@@ -630,6 +688,7 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
   final ctrlTelefono = TextEditingController();
   final ctrlCorreo = TextEditingController();
   int? _mesaIdSeleccionada;
+  bool _guardando = false;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -655,6 +714,53 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
     _formKey.currentState?.reset();
   }
 
+  Future<void> _guardarVeedor() async {
+    if (!_formKey.currentState!.validate()) {
+      _mostrarErrorDialog(
+        context,
+        'Todos los campos son obligatorios y deben tener un formato válido. Revisa los campos marcados en rojo.',
+        titulo: 'Formulario incompleto',
+      );
+      return;
+    }
+    if (_mesaIdSeleccionada == null) {
+      _mostrarErrorDialog(
+        context,
+        'Debes seleccionar una mesa (JRV) para asignar al veedor.',
+        titulo: 'Mesa no seleccionada',
+      );
+      return;
+    }
+
+    setState(() => _guardando = true);
+    try {
+      await ref.read(crearVeedorProvider)(
+        ctrlCedula.text.trim(),
+        ctrlNombre.text.trim(),
+        ctrlApellido.text.trim(),
+        ctrlTelefono.text.trim(),
+        ctrlCorreo.text.trim(),
+        _mesaIdSeleccionada!,
+      );
+      ref.invalidate(veedoresDeRecintoProvider(widget.recintoId));
+      ref.invalidate(mesasPorRecintoProvider(widget.recintoId));
+      _limpiar();
+      if (context.mounted) {
+        _mostrarExitoDialog(
+          context,
+          'Veedor registrado correctamente. Se envió un correo de confirmación con sus credenciales de acceso.',
+          onClose: widget.onRegistroExitoso,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        _mostrarErrorDialog(context, _mensajeAmigable(e.toString()));
+      }
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final veedoresAsync = ref.watch(veedoresDeRecintoProvider(widget.recintoId));
@@ -666,7 +772,6 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Botón superior ─────────────────────────────────────────────────
           _mostrarFormulario
               ? OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -690,7 +795,6 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
           const SizedBox(height: 16),
 
           if (_mostrarFormulario) ...[
-            // ── FORMULARIO ─────────────────────────────────────────────────
             const Center(child: Icon(Icons.person_add_outlined, size: 40, color: _Tema.primary)),
             const SizedBox(height: 12),
             const Text('Registrar Nuevo Veedor',
@@ -700,6 +804,14 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
             const Text('Complete los datos para dar de alta al nuevo veedor electoral.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
+            const SizedBox(height: 4),
+            const Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '* ', style: TextStyle(color: _Tema.errorColor, fontWeight: FontWeight.bold)),
+                TextSpan(text: 'Todos los campos son obligatorios', style: TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant)),
+              ]),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             Form(
               key: _formKey,
@@ -719,21 +831,29 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                         hint: 'Ej: 0000000000 (10 dígitos)',
                         digitsOnly: true,
                         maxLength: 10,
-                        validator: CedulaValidator.validate),
+                        obligatorio: true,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Este campo es obligatorio';
+                          final esValida = CedulaValidator.validate(v);
+                          if (esValida != null) return esValida;
+                          return null;
+                        }),
                     const SizedBox(height: 16),
                     _CampoForm(
                         ctrl: ctrlNombre,
                         label: 'Nombres Completos',
                         icono: Icons.person_outline,
                         hint: 'Ej: Juan Andrés',
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null),
+                        obligatorio: true,
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Este campo es obligatorio' : null),
                     const SizedBox(height: 16),
                     _CampoForm(
                         ctrl: ctrlApellido,
                         label: 'Apellidos Completos',
                         icono: Icons.person_outline,
                         hint: 'Ej: Pérez García',
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null),
+                        obligatorio: true,
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Este campo es obligatorio' : null),
                     const SizedBox(height: 16),
                     _CampoForm(
                         ctrl: ctrlTelefono,
@@ -742,8 +862,9 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                         hint: 'Ej: 0999999999',
                         digitsOnly: true,
                         maxLength: 10,
+                        obligatorio: true,
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Obligatorio';
+                          if (v == null || v.trim().isEmpty) return 'Este campo es obligatorio';
                           if (v.length < 9) return 'Teléfono inválido';
                           return null;
                         }),
@@ -754,14 +875,25 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                         icono: Icons.mail_outline,
                         hint: 'usuario@correo.com',
                         keyboard: TextInputType.emailAddress,
+                        obligatorio: true,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Obligatorio';
-                          if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(v.trim()))
+                          if (v == null || v.trim().isEmpty) return 'Este campo es obligatorio';
+                          if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(v.trim())) {
                             return 'Correo inválido';
+                          }
                           return null;
                         }),
                     const SizedBox(height: 16),
-                    _CampoLabel(icono: Icons.grid_view_outlined, texto: 'Mesa a Asignar (JRV)'),
+                    Row(
+                      children: [
+                        const Icon(Icons.grid_view_outlined, size: 14, color: _Tema.onSurfaceVariant),
+                        const SizedBox(width: 6),
+                        const Text('Mesa a Asignar (JRV)',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.onSurfaceVariant)),
+                        const SizedBox(width: 4),
+                        const Text('*', style: TextStyle(color: _Tema.errorColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     mesasAsync.when(
                       loading: () => const LinearProgressIndicator(),
@@ -797,11 +929,11 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                           color: _Tema.brandAccent,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: _Tema.primary.withOpacity(0.1))),
-                      child: Row(
+                      child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.lock_outline, size: 18, color: _Tema.primary),
-                          const SizedBox(width: 8),
+                          Icon(Icons.lock_outline, size: 18, color: _Tema.primary),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Se enviará una invitación de acceso seguro al correo proporcionado.',
@@ -821,39 +953,16 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                   backgroundColor: _Tema.primary,
                   minimumSize: const Size.fromHeight(50),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-              onPressed: () async {
-                if (!_formKey.currentState!.validate()) return;
-                try {
-                  await ref.read(crearVeedorProvider)(
-                    ctrlCedula.text.trim(),
-                    ctrlNombre.text.trim(),
-                    ctrlApellido.text.trim(),
-                    ctrlTelefono.text.trim(),
-                    ctrlCorreo.text.trim(),
-                    _mesaIdSeleccionada!,
-                  );
-                  ref.invalidate(veedoresDeRecintoProvider(widget.recintoId));
-                  ref.invalidate(mesasPorRecintoProvider(widget.recintoId));
-                  _limpiar();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Veedor registrado · Se envió correo de confirmación'),
-                      backgroundColor: _Tema.success,
-                    ));
-                    widget.onRegistroExitoso();
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e'), backgroundColor: _Tema.errorColor));
-                  }
-                }
-              },
-              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.assignment_ind_outlined, size: 18),
-                SizedBox(width: 8),
-                Text('Finalizar Registro', style: TextStyle(fontWeight: FontWeight.bold))
-              ]),
+              onPressed: _guardando ? null : _guardarVeedor,
+              child: _guardando
+                  ? const SizedBox(
+                      height: 20, width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.assignment_ind_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Finalizar Registro', style: TextStyle(fontWeight: FontWeight.bold))
+                    ]),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
@@ -866,10 +975,7 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
               child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ] else ...[
-            // ── LISTA DE VEEDORES ──────────────────────────────────────────
-            const Text('Veedores Registrados',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _Tema.onSurfaceVariant)),
-            const SizedBox(height: 8),
+            // ── LISTA DE VEEDORES: disponibles arriba, no disponibles abajo ─
             veedoresAsync.when(
               loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
               error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: _Tema.errorColor))),
@@ -883,7 +989,25 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                     onTap: () => setState(() => _mostrarFormulario = true),
                   );
                 }
-                return Column(children: veedores.map((v) => _TarjetaVeedor(veedor: v)).toList());
+                final disponibles = veedores.where((v) => v.disponible).toList();
+                final noDisponibles = veedores.where((v) => !v.disponible).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (disponibles.isNotEmpty) ...[
+                      _SeccionHeader(texto: 'Disponibles', color: _Tema.success, count: disponibles.length),
+                      const SizedBox(height: 8),
+                      ...disponibles.map((v) => _TarjetaVeedor(veedor: v)),
+                      const SizedBox(height: 16),
+                    ],
+                    if (noDisponibles.isNotEmpty) ...[
+                      _SeccionHeader(texto: 'No disponibles', color: _Tema.greyLight, count: noDisponibles.length),
+                      const SizedBox(height: 8),
+                      ...noDisponibles.map((v) => _TarjetaVeedor(veedor: v)),
+                    ],
+                  ],
+                );
               },
             ),
           ],
@@ -893,12 +1017,41 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
   }
 }
 
+class _SeccionHeader extends StatelessWidget {
+  final String texto;
+  final Color color;
+  final int count;
+  const _SeccionHeader({required this.texto, required this.color, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(texto.toUpperCase(),
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.bold, color: _Tema.onSurfaceVariant, letterSpacing: 0.5)),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+          child: Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+        ),
+      ],
+    );
+  }
+}
+
 class _TarjetaVeedor extends StatelessWidget {
-  final Usuario veedor;
+  final VeedorConMesa veedor;
   const _TarjetaVeedor({required this.veedor});
 
   @override
   Widget build(BuildContext context) {
+    final u = veedor.usuario;
+    final disponible = veedor.disponible;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -912,7 +1065,7 @@ class _TarjetaVeedor extends StatelessWidget {
             radius: 22,
             backgroundColor: _Tema.brandAccent,
             child: Text(
-                veedor.nombres.isNotEmpty ? veedor.nombres[0].toUpperCase() : '?',
+                u.nombres.isNotEmpty ? u.nombres[0].toUpperCase() : '?',
                 style: const TextStyle(color: _Tema.primary, fontWeight: FontWeight.bold, fontSize: 16)),
           ),
           const SizedBox(width: 12),
@@ -920,21 +1073,36 @@ class _TarjetaVeedor extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${veedor.nombres} ${veedor.apellidos}',
+                Text('${u.nombres} ${u.apellidos}',
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _Tema.onSurface)),
                 const SizedBox(height: 2),
-                Text('C.C: ${veedor.cedula}',
+                Text('C.C: ${u.cedula}',
                     style: const TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant)),
-                if (veedor.correo.isNotEmpty)
-                  Text(veedor.correo, style: const TextStyle(fontSize: 11, color: _Tema.greyLight)),
+                if (u.correo.isNotEmpty)
+                  Text(u.correo, style: const TextStyle(fontSize: 11, color: _Tema.greyLight)),
+                if (!disponible && veedor.numeroMesa != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('Asignado a Mesa ${veedor.numeroMesa}',
+                        style: const TextStyle(fontSize: 11, color: _Tema.primary, fontWeight: FontWeight.w600)),
+                  ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: _Tema.successContainer, borderRadius: BorderRadius.circular(4)),
-            child: const Text('Activo',
-                style: TextStyle(fontSize: 10, color: _Tema.success, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: disponible ? _Tema.successContainer : _Tema.warningContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              disponible ? 'Disponible' : 'Asignado',
+              style: TextStyle(
+                fontSize: 10,
+                color: disponible ? _Tema.success : _Tema.warningColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -970,7 +1138,7 @@ class _TabReasignar extends ConsumerWidget {
                 return const _EmptyState(
                   icono: Icons.swap_horiz_outlined,
                   mensaje: 'Sin mesas disponibles',
-                  sub: 'Registra mesas primero en la pestaña Mesas.',
+                  sub: 'El coordinador provincial aún no ha registrado mesas para este recinto.',
                 );
               }
               return Column(children: mesas.map((m) => _TarjetaReasignacion(mesa: m)).toList());
@@ -1039,7 +1207,7 @@ class _TarjetaReasignacion extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// DIÁLOGO REASIGNAR
+// DIÁLOGO REASIGNAR / ASIGNAR — usado en Tab Reasignar Y en "Mesas sin veedor"
 // ═════════════════════════════════════════════════════════════════════════════
 class _DialogoReasignar extends ConsumerStatefulWidget {
   final MesaJrv mesa;
@@ -1051,6 +1219,7 @@ class _DialogoReasignar extends ConsumerStatefulWidget {
 
 class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
   String? _veedorSeleccionado;
+  bool _guardando = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1063,7 +1232,7 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
         children: [
           const Icon(Icons.swap_horiz_outlined, size: 36, color: _Tema.primary),
           const SizedBox(height: 8),
-          Text('Reasignar Veedor\nMesa ${widget.mesa.numeroMesa}',
+          Text('Asignar / Reasignar Veedor\nMesa ${widget.mesa.numeroMesa}',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _Tema.onSurface)),
         ],
@@ -1078,7 +1247,9 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
           loading: () => const SizedBox(height: 60, child: Center(child: CircularProgressIndicator())),
           error: (e, _) => Text('Error: $e'),
           data: (veedores) {
-            if (veedores.isEmpty) {
+            // Solo mostramos veedores disponibles (sin mesa asignada).
+            final disponibles = veedores.where((v) => v.disponible).toList();
+            if (disponibles.isEmpty) {
               return const Text('No hay veedores disponibles en este recinto.',
                   style: TextStyle(fontSize: 14));
             }
@@ -1093,10 +1264,11 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
                     borderSide: const BorderSide(color: _Tema.outline)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
-              items: veedores
+              items: disponibles
                   .map((v) => DropdownMenuItem(
-                        value: v.id,
-                        child: Text('${v.nombres} ${v.apellidos}', style: const TextStyle(fontSize: 13)),
+                        value: v.usuario.id,
+                        child: Text('${v.usuario.nombres} ${v.usuario.apellidos}',
+                            style: const TextStyle(fontSize: 13)),
                       ))
                   .toList(),
               onChanged: (v) => setState(() => _veedorSeleccionado = v),
@@ -1117,26 +1289,31 @@ class _DialogoReasignarState extends ConsumerState<_DialogoReasignar> {
           style: FilledButton.styleFrom(
               backgroundColor: _Tema.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-          onPressed: _veedorSeleccionado == null
+          onPressed: (_veedorSeleccionado == null || _guardando)
               ? null
               : () async {
+                  setState(() => _guardando = true);
                   try {
                     await ref.read(reasignarVeedorProvider)(_veedorSeleccionado!, widget.mesa.id);
+                    ref.invalidate(veedoresDeRecintoProvider(widget.mesa.recintoId));
+                    ref.invalidate(mesasPorRecintoProvider(widget.mesa.recintoId));
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Veedor reasignado exitosamente'),
-                        backgroundColor: _Tema.success,
-                      ));
+                      _mostrarExitoDialog(
+                          context, 'Veedor asignado exitosamente a la Mesa ${widget.mesa.numeroMesa}.');
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e'), backgroundColor: _Tema.errorColor));
+                      _mostrarErrorDialog(
+                          context, 'No se pudo asignar al veedor.\n\n${_mensajeAmigable(e.toString())}');
                     }
+                  } finally {
+                    if (mounted) setState(() => _guardando = false);
                   }
                 },
-          child: const Text('Confirmar Reasignación', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: _guardando
+              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Text('Confirmar', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -1224,24 +1401,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _CampoLabel extends StatelessWidget {
-  final IconData icono;
-  final String texto;
-  const _CampoLabel({required this.icono, required this.texto});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icono, size: 14, color: _Tema.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Text(texto,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.onSurfaceVariant)),
-      ],
-    );
-  }
-}
-
 InputDecoration _inputDeco(String hint) => InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: _Tema.greyLight, fontSize: 13),
@@ -1264,7 +1423,7 @@ class _CampoForm extends StatelessWidget {
   final String hint;
   final bool digitsOnly;
   final int? maxLength;
-  final bool required;
+  final bool obligatorio;
   final String? Function(String?)? validator;
   final TextInputType? keyboard;
 
@@ -1275,7 +1434,7 @@ class _CampoForm extends StatelessWidget {
     this.icono,
     this.digitsOnly = false,
     this.maxLength,
-    this.required = true,
+    this.obligatorio = true,
     this.validator,
     this.keyboard,
   });
@@ -1285,7 +1444,18 @@ class _CampoForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _CampoLabel(icono: icono ?? Icons.edit_outlined, texto: label),
+        Row(
+          children: [
+            Icon(icono ?? Icons.edit_outlined, size: 14, color: _Tema.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.onSurfaceVariant)),
+            if (obligatorio) ...[
+              const SizedBox(width: 4),
+              const Text('*', style: TextStyle(color: _Tema.errorColor, fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ],
+        ),
         const SizedBox(height: 6),
         TextFormField(
           controller: ctrl,
@@ -1296,7 +1466,7 @@ class _CampoForm extends StatelessWidget {
           ],
           decoration: _inputDeco(hint),
           validator: validator ??
-              (required
+              (obligatorio
                   ? (v) => (v == null || v.trim().isEmpty) ? 'Este campo es obligatorio' : null
                   : null),
         ),

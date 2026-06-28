@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/supabase_constants.dart';
+import 'features/auth/data/models/usuario_model.dart';
 import 'features/auth/domain/entities/usuario.dart';
 import 'features/auth/presentation/controller/login_controller.dart';
 import 'features/auth/presentation/veedor/veedor_panel_screen.dart';
@@ -21,13 +23,15 @@ void main() async {
     url: SupabaseConstants.url,
     publishableKey: SupabaseConstants.anonKey,
     authOptions: const FlutterAuthClientOptions(
-      authFlowType:
-          AuthFlowType.implicit, // ← flujo implícito: manda tokens directo
+      authFlowType: AuthFlowType.implicit,
     ),
   );
   runApp(const ProviderScope(child: ControlElectoralApp()));
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// APP
+// ═════════════════════════════════════════════════════════════════════════════
 class ControlElectoralApp extends StatefulWidget {
   const ControlElectoralApp({super.key});
 
@@ -45,12 +49,9 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
   }
 
   void _iniciarDeepLinks() {
-    // 1. Captura el link inicial si la app fue abierta DESDE CERRADA por el link
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) _manejarDeepLink(uri);
     });
-
-    // 2. Captura links mientras la app ya está abierta/en background
     _appLinks.uriLinkStream.listen((uri) {
       _manejarDeepLink(uri);
     });
@@ -58,39 +59,24 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
 
   Future<void> _manejarDeepLink(Uri uri) async {
     debugPrint('🔗 Deep link recibido: $uri');
-
-    // ── Flujo implícito: #access_token=xxx&refresh_token=xxx&type=recovery ──
     final fragment = uri.fragment;
-    if (fragment.isEmpty) {
-      debugPrint('⚠️ Deep link sin fragment, se ignora.');
-      return;
-    }
+    if (fragment.isEmpty) return;
 
     final params = Uri.splitQueryString(fragment);
     final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
     final type = params['type'];
 
-    debugPrint(
-        '📦 Params → type=$type, accessToken=${accessToken != null}, refreshToken=${refreshToken != null}');
-
     if (!mounted) return;
 
-    // ── 'magiclink' = correo de ACTIVACIÓN de cuenta nueva (crear-usuario) ──
-    // NO logueamos automáticamente. Solo mandamos al login para que el
-    // usuario ingrese manualmente con la contraseña temporal que se le envió.
-    // Desde el login, la lógica existente (usuario.debeCambiarPassword) ya
-    // lo redirige a /cambiar-password después de autenticarse.
     if (type == 'magiclink') {
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/',
-        (route) => false,
-      );
+      navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/', (r) => false);
       final ctx = navigatorKey.currentState?.overlay?.context;
       if (ctx != null) {
         ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
           content: Text(
-              '✅ Cuenta activada. Ingresa con la contraseña temporal que recibiste.'),
+              '✅ Cuenta activada. Ingresa con tu contraseña temporal.'),
           backgroundColor: Color(0xFF039855),
           duration: Duration(seconds: 4),
         ));
@@ -98,16 +84,10 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
       return;
     }
 
-    // ── 'recovery' / 'invite' = sí necesitan sesión temporal para poder
-    //    cambiar la contraseña sin volver a loguearse ──
-    if (accessToken == null || refreshToken == null) {
-      debugPrint('⚠️ Faltan tokens en el deep link.');
-      return;
-    }
+    if (accessToken == null || refreshToken == null) return;
 
     try {
       await Supabase.instance.client.auth.setSession(refreshToken);
-      debugPrint('✅ Sesión establecida correctamente.');
     } catch (e) {
       debugPrint('❌ Error estableciendo sesión: $e');
       return;
@@ -116,15 +96,11 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
     if (!mounted) return;
 
     if (type == 'recovery' || type == 'invite') {
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/cambiar-password',
-        (route) => false,
-      );
+      navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/cambiar-password', (r) => false);
     } else if (type == 'signup') {
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/',
-        (route) => false,
-      );
+      navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/', (r) => false);
       final ctx = navigatorKey.currentState?.overlay?.context;
       if (ctx != null) {
         ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
@@ -141,12 +117,10 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
       title: 'Control Electoral',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Inter',
-      ),
-      home: const LoginScreen(),
+      theme: ThemeData(useMaterial3: true, fontFamily: 'Inter'),
+      home: const _SplashRouter(),
       routes: {
+        '/login': (_) => const LoginScreen(),
         '/veedor': (_) => const VeedorPanelScreen(),
         '/olvide-password': (_) => const OlvidePasswordScreen(),
         '/cambiar-password': (_) => const CambiarPasswordScreen(),
@@ -157,7 +131,130 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
   }
 }
 
-// ─── LOGIN SCREEN ─────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SPLASH ROUTER — decide a dónde ir al abrir la app
+// ═════════════════════════════════════════════════════════════════════════════
+class _SplashRouter extends ConsumerStatefulWidget {
+  const _SplashRouter();
+
+  @override
+  ConsumerState<_SplashRouter> createState() => _SplashRouterState();
+}
+
+class _SplashRouterState extends ConsumerState<_SplashRouter> {
+  @override
+  void initState() {
+    super.initState();
+    _resolver();
+  }
+
+  Future<void> _resolver() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    final supabase = Supabase.instance.client;
+    final session = supabase.auth.currentSession;
+
+    // Sin sesión guardada → login
+    if (session == null) {
+      _ir(const LoginScreen());
+      return;
+    }
+
+    // Hay sesión — intenta verificar con la BD
+    try {
+      final res = await supabase
+          .from('usuarios')
+          .select()
+          .eq('id', session.user.id)
+          .single()
+          .timeout(const Duration(seconds: 6));
+
+      final usuario = UsuarioModel.fromMap(
+        res as Map<String, dynamic>,
+        correo: session.user.email ?? '',
+      );
+
+      // Inyecta el usuario en el provider para que las pantallas lo encuentren
+      ref.read(usuarioActualProvider.notifier).state = usuario;
+
+      if (usuario.debeCambiarPassword) {
+        _ir(const LoginScreen());
+        return;
+      }
+
+      switch (usuario.rol) {
+        case RolUsuario.coordinadorProvincial:
+          _ir(const CoordinadorProvincialPanelScreen());
+          break;
+        case RolUsuario.coordinadorRecinto:
+          _ir(const CoordinadorRecintoPanelScreen());
+          break;
+        case RolUsuario.veedor:
+          _ir(const VeedorPanelScreen());
+          break;
+      }
+    } on TimeoutException {
+      // Sin conexión pero hay sesión → entra con rol guardado localmente
+      _irPorRolMetadata(session);
+    } catch (_) {
+      // Token inválido o error inesperado → login limpio
+      await supabase.auth.signOut();
+      _ir(const LoginScreen());
+    }
+  }
+
+  void _irPorRolMetadata(Session session) {
+    final rol = session.user.userMetadata?['rol'] as String?;
+    switch (rol) {
+      case 'coordinador_provincial':
+        _ir(const CoordinadorProvincialPanelScreen());
+        break;
+      case 'coordinador_recinto':
+        _ir(const CoordinadorRecintoPanelScreen());
+        break;
+      case 'veedor':
+        _ir(const VeedorPanelScreen());
+        break;
+      default:
+        _ir(const LoginScreen());
+    }
+  }
+
+  void _ir(Widget pantalla) {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => pantalla),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFF8F9FC),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.verified_user_outlined,
+                color: Color(0xFF3422CD), size: 52),
+            SizedBox(height: 20),
+            CircularProgressIndicator(
+                color: Color(0xFF3422CD), strokeWidth: 2),
+            SizedBox(height: 16),
+            Text('Verificando sesión...',
+                style: TextStyle(
+                    color: Color(0xFF667085),
+                    fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LOGIN SCREEN
+// ═════════════════════════════════════════════════════════════════════════════
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -178,9 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+        vsync: this, duration: const Duration(milliseconds: 800));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
   }
@@ -208,12 +303,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Future<void> _onLoginPressed() async {
     FocusScope.of(context).unfocus();
 
-    if (_selectedRol == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona tu rol antes de continuar.'),
-          backgroundColor: Color(0xFFD92D20),
-        ),
+    // ── Validación campos vacíos ───────────────────────────────────────────
+    final camposVacios = <String>[];
+    if (_selectedRol == null) camposVacios.add('Rol');
+    if (_cedulaCtrl.text.trim().isEmpty) camposVacios.add('Cédula');
+    if (_passwordCtrl.text.isEmpty) camposVacios.add('Contraseña');
+
+    if (camposVacios.isNotEmpty) {
+      _mostrarModalError(
+        'Por favor completa los siguientes campos:\n\n• ${camposVacios.join('\n• ')}',
       );
       return;
     }
@@ -225,17 +323,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     if (!mounted || usuario == null) return;
 
     final rolEsperado = _rolDesdeDropdown(_selectedRol!);
-
     if (usuario.rol != rolEsperado) {
       await ref.read(loginControllerProvider.notifier).logout();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El rol seleccionado no corresponde a tu cuenta.'),
-          backgroundColor: Color(0xFFD92D20),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      _mostrarModalError('El rol seleccionado no corresponde a tu cuenta.');
       return;
     }
 
@@ -257,10 +348,212 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  // ── Modal de error ─────────────────────────────────────────────────────────
+  void _mostrarModalError(String mensaje) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.error_outline,
+                    color: Color(0xFFD92D20), size: 28),
+              ),
+              const SizedBox(height: 16),
+              const Text('Atención',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF101828))),
+              const SizedBox(height: 8),
+              Text(
+                mensaje,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF475467),
+                    height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B1CB1),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Entendido',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Bottom Sheet selector de rol ───────────────────────────────────────────
+  void _mostrarSelectorRol() {
+    final roles = [
+      _RolOpcion(
+          'Coordinador Provincial',
+          'Supervisión general del proceso electoral',
+          Icons.account_balance_outlined),
+      _RolOpcion(
+          'Coordinador Recinto',
+          'Gestión de mesas y veedores del recinto',
+          Icons.location_city_outlined),
+      _RolOpcion('Veedor', 'Ingreso y seguimiento de actas',
+          Icons.how_to_vote_outlined),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE4E7EC),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Seleccionar Rol',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF101828))),
+            ),
+            const SizedBox(height: 4),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                  'Elige el rol con el que ingresarás al sistema.',
+                  style: TextStyle(
+                      fontSize: 13, color: Color(0xFF667085))),
+            ),
+            const SizedBox(height: 20),
+            ...roles.map((rol) {
+              final seleccionado = _selectedRol == rol.label;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedRol = rol.label);
+                  Navigator.pop(ctx);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: seleccionado
+                        ? const Color(0xFFF0EEFF)
+                        : const Color(0xFFF9FAFB),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: seleccionado
+                          ? const Color(0xFF3422CD)
+                          : const Color(0xFFE4E7EC),
+                      width: seleccionado ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: seleccionado
+                              ? const Color(0xFFE8E7FF)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                              color: const Color(0xFFE4E7EC)),
+                        ),
+                        child: Icon(rol.icon,
+                            size: 20,
+                            color: seleccionado
+                                ? const Color(0xFF3422CD)
+                                : const Color(0xFF667085)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(rol.label,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: seleccionado
+                                        ? const Color(0xFF3422CD)
+                                        : const Color(0xFF101828))),
+                            const SizedBox(height: 2),
+                            Text(rol.descripcion,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF667085))),
+                          ],
+                        ),
+                      ),
+                      if (seleccionado)
+                        const Icon(Icons.check_circle,
+                            color: Color(0xFF3422CD), size: 20),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(loginControllerProvider);
     final size = MediaQuery.of(context).size;
+
+    // Errores del provider → modal
+    ref.listen(loginControllerProvider, (prev, next) {
+      if (next.hasError && next.error != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _mostrarModalError(_mensajeError('${next.error}'));
+          }
+        });
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FC),
@@ -270,25 +563,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           child: FadeTransition(
             opacity: _fadeAnim,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 20),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: size.height - 60),
+                constraints:
+                    BoxConstraints(minHeight: size.height - 60),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // ── Card principal ────────────────────────────────────
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE4E7EC)),
+                        border: Border.all(
+                            color: const Color(0xFFE4E7EC)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Row(
-                            children: const [
+                          // Header
+                          const Row(
+                            children: [
                               Icon(Icons.verified_user_outlined,
                                   color: Color(0xFF3422CD), size: 22),
                               SizedBox(width: 8),
@@ -300,6 +598,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ],
                           ),
                           const SizedBox(height: 32),
+
+                          // Ícono central
                           Container(
                             width: 64,
                             height: 64,
@@ -311,7 +611,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 color: Color(0xFF3422CD), size: 30),
                           ),
                           const SizedBox(height: 24),
-                          const Text('Acceda a su portal de votación',
+
+                          const Text(
+                              'Acceda a su portal de votación',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                   color: Color(0xFF101828),
@@ -327,10 +629,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   fontSize: 14,
                                   height: 1.4)),
                           const SizedBox(height: 32),
+
+                          // ── Selector de rol ───────────────────────────────
                           _buildLabel('Seleccionar Rol'),
                           const SizedBox(height: 6),
-                          _buildDropdownField(),
+                          GestureDetector(
+                            onTap: _mostrarSelectorRol,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 13),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _selectedRol == null
+                                      ? const Color(0xFFD0D5DD)
+                                      : const Color(0xFF3422CD),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.account_circle_outlined,
+                                    color: _selectedRol == null
+                                        ? const Color(0xFF667085)
+                                        : const Color(0xFF3422CD),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedRol ??
+                                          'Seleccionar un rol',
+                                      style: TextStyle(
+                                          color: _selectedRol != null
+                                              ? const Color(0xFF101828)
+                                              : const Color(0xFF98A2B3),
+                                          fontSize: 14),
+                                    ),
+                                  ),
+                                  const Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: Color(0xFF667085)),
+                                ],
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 20),
+
+                          // ── Cédula ────────────────────────────────────────
                           _buildLabel('ID del Usuario'),
                           const SizedBox(height: 6),
                           _buildTextField(
@@ -344,14 +692,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ],
                           ),
                           const SizedBox(height: 20),
+
+                          // ── Contraseña ────────────────────────────────────
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
                             children: [
                               _buildLabel('Contraseña'),
                               GestureDetector(
                                 onTap: () => Navigator.of(context)
                                     .pushNamed('/olvide-password'),
-                                child: const Text('¿Olvidó su contraseña?',
+                                child: const Text(
+                                    '¿Olvidó su contraseña?',
                                     style: TextStyle(
                                         color: Color(0xFF3422CD),
                                         fontSize: 12,
@@ -373,37 +725,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 color: const Color(0xFF98A2B3),
                                 size: 20,
                               ),
-                              onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(() =>
+                                  _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           const SizedBox(height: 24),
-                          if (state.hasError)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3F2),
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFFECDCA)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.error_outline,
-                                      color: Color(0xFFD92D20), size: 18),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _mensajeError('${state.error}'),
-                                      style: const TextStyle(
-                                          color: Color(0xFFB42318),
-                                          fontSize: 13),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+
+                          // ── Botón iniciar sesión ──────────────────────────
                           SizedBox(
                             width: double.infinity,
                             height: 48,
@@ -415,10 +743,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 : ElevatedButton(
                                     onPressed: _onLoginPressed,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF2B1CB1),
+                                      backgroundColor:
+                                          const Color(0xFF2B1CB1),
                                       elevation: 2,
-                                      shadowColor: const Color(0xFF3422CD)
-                                          .withOpacity(0.3),
+                                      shadowColor:
+                                          const Color(0xFF3422CD)
+                                              .withOpacity(0.3),
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8)),
@@ -427,43 +757,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 15,
-                                            fontWeight: FontWeight.w600)),
+                                            fontWeight:
+                                                FontWeight.w600)),
                                   ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('¿No tienes cuenta? ',
-                                  style: TextStyle(
-                                      color: Color(0xFF667085), fontSize: 13)),
-                              GestureDetector(
-                                onTap: () => Navigator.of(context)
-                                    .pushNamed('/solicitar-acceso'),
-                                child: const Text('Solicitar acceso',
-                                    style: TextStyle(
-                                        color: Color(0xFF3422CD),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600)),
-                              ),
-                            ],
                           ),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
+                    // ── Banner inferior ───────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFD1FADF),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: const Color(0xFF6EE7B7).withOpacity(0.5)),
+                            color: const Color(0xFF6EE7B7)
+                                .withOpacity(0.5)),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info, color: Color(0xFF065F46), size: 20),
+                          Icon(Icons.info,
+                              color: Color(0xFF065F46), size: 20),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -515,7 +833,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Color(0xFF98A2B3)),
-        prefixIcon: Icon(icon, color: const Color(0xFF667085), size: 20),
+        prefixIcon:
+            Icon(icon, color: const Color(0xFF667085), size: 20),
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
@@ -529,53 +848,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
+            borderSide: const BorderSide(
+                color: Color(0xFF3422CD), width: 1.5)),
       ),
-    );
-  }
-
-  Widget _buildDropdownField() {
-    return DropdownButtonFormField<String>(
-      value: _selectedRol,
-      hint: Row(
-        children: const [
-          Icon(Icons.account_circle_outlined,
-              color: Color(0xFF667085), size: 20),
-          SizedBox(width: 10),
-          Text('Seleccionar un rol',
-              style: TextStyle(color: Color(0xFF98A2B3), fontSize: 14)),
-        ],
-      ),
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: Color(0xFF667085)),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
-      ),
-      items: const ['Coordinador Provincial', 'Coordinador Recinto', 'Veedor']
-          .map((value) => DropdownMenuItem<String>(
-                value: value,
-                child: Text(value,
-                    style: const TextStyle(
-                        color: Color(0xFF101828), fontSize: 14)),
-              ))
-          .toList(),
-      onChanged: (value) => setState(() => _selectedRol = value),
     );
   }
 
   String _mensajeError(String error) {
+    if (error.contains('SocketException') ||
+        error.contains('network') ||
+        error.contains('Failed host lookup') ||
+        error.contains('Connection refused') ||
+        error.contains('conexión') ||
+        error.contains('TimeoutException'))
+      return 'Sin conexión. Verifica tu internet e intenta de nuevo.';
     if (error.contains('Cédula inválida'))
       return 'Cédula inválida. Verifica el número.';
     if (error.contains('Invalid login credentials'))
@@ -588,4 +874,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       return 'Correo no confirmado. Revisa tu bandeja de entrada.';
     return error;
   }
+}
+
+// ── Modelo interno para opciones de rol ──────────────────────────────────────
+class _RolOpcion {
+  final String label;
+  final String descripcion;
+  final IconData icon;
+  const _RolOpcion(this.label, this.descripcion, this.icon);
 }

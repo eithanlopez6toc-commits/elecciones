@@ -46,6 +46,8 @@ dependencies:
   path_provider: ^2.1.4
   supabase_flutter: ^2.14.2
   app_links: ^6.4.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

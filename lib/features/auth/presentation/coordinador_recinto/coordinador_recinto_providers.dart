@@ -36,29 +36,61 @@ final actasDeMesaProvider =
       .toList();
 });
 
-// ─── Veedores del recinto ─────────────────────────────────────────────────────
+// ─── Veedor + info de mesa asignada ──────────────────────────────────────────
+class VeedorConMesa {
+  final Usuario usuario;
+  final int? mesaId;
+  final int? numeroMesa;
+
+  const VeedorConMesa({
+    required this.usuario,
+    this.mesaId,
+    this.numeroMesa,
+  });
+
+  /// Disponible = no tiene ninguna mesa asignada actualmente.
+  bool get disponible => mesaId == null;
+}
+
+// ─── Veedores del recinto (clasificados por disponibilidad) ─────────────────
+// IMPORTANTE: para que "disponible" funcione, la columna mesa_id en
+// veedor_mesas debe permitir NULL, y reasignarVeedorProvider /
+// liberarVeedorProvider deben dejar mesa_id en null en vez de borrar la fila
+// cuando se libera a un veedor sin asignarle otra mesa.
 final veedoresDeRecintoProvider =
-    FutureProvider.family<List<Usuario>, int>((ref, recintoId) async {
+    FutureProvider.family<List<VeedorConMesa>, int>((ref, recintoId) async {
   final supabase = ref.watch(supabaseClientProvider);
   final res = await supabase.from('veedor_mesas').select('''
         usuario_id,
         mesa_id,
         usuarios!inner(*),
-        mesas_jrv!inner(recinto_id)
+        mesas_jrv!inner(recinto_id, numero_mesa)
       ''').eq('mesas_jrv.recinto_id', recintoId);
 
   final vistos = <String>{};
-  final lista = <Usuario>[];
+  final lista = <VeedorConMesa>[];
   for (final row in res as List) {
     final uid = row['usuario_id'] as String;
     if (!vistos.contains(uid)) {
       vistos.add(uid);
-      lista.add(UsuarioModel.fromMap(
-        row['usuarios'] as Map<String, dynamic>,
-        correo: '',
+      final mesaJrv = row['mesas_jrv'] as Map<String, dynamic>?;
+      lista.add(VeedorConMesa(
+        usuario: UsuarioModel.fromMap(
+          row['usuarios'] as Map<String, dynamic>,
+          correo: '',
+        ),
+        mesaId: row['mesa_id'] as int?,
+        numeroMesa: mesaJrv?['numero_mesa'] as int?,
       ));
     }
   }
+
+  // Disponibles primero, no disponibles después.
+  lista.sort((a, b) {
+    if (a.disponible == b.disponible) return 0;
+    return a.disponible ? -1 : 1;
+  });
+
   return lista;
 });
 
@@ -110,21 +142,7 @@ final resumenRecintoProvider =
   );
 });
 
-// ─── Crear mesa ───────────────────────────────────────────────────────────────
-final crearMesaProvider = Provider<
-    Future<void> Function(int recintoId, int numero, GeneroMesa genero)>((ref) {
-  return (recintoId, numero, genero) async {
-    final supabase = ref.read(supabaseClientProvider);
-    await supabase.from(SupabaseConstants.mesasJrvTable).insert({
-      'recinto_id': recintoId,
-      'numero_mesa': numero,
-      'genero': genero.dbValue,
-    });
-  };
-});
-
 // ─── Crear cuenta de veedor ───────────────────────────────────────────────────
-// FIX: 'nombre' singular (no 'nombres'), y se valida response.status
 final crearVeedorProvider = Provider<
     Future<void> Function(String cedula, String nombre, String apellido,
         String telefono, String correo, int mesaId)>((ref) {
@@ -132,7 +150,7 @@ final crearVeedorProvider = Provider<
     final supabase = ref.read(supabaseClientProvider);
     final response = await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
-      'nombre': nombre, // ← FIX: singular, coincide con Edge Function
+      'nombre': nombre,
       'apellido': apellido,
       'telefono': telefono,
       'correo': correo,
@@ -150,7 +168,6 @@ final crearVeedorProvider = Provider<
 });
 
 // ─── Editar/corregir acta (sin restricción para coordinador) ─────────────────
-// Actualiza votos, foto y estado. El coordinador puede corregir cualquier campo.
 final editarActaProvider = Provider<
     Future<void> Function({
       required int actaId,
@@ -162,11 +179,10 @@ final editarActaProvider = Provider<
       ...campos,
       'updated_at': DateTime.now().toIso8601String(),
     };
-    final error = await supabase
+    await supabase
         .from(SupabaseConstants.actasTable)
         .update(updates)
         .eq('id', actaId);
-    if (error != null) throw Exception(error.toString());
   };
 });
 
@@ -180,5 +196,16 @@ final reasignarVeedorProvider =
       'usuario_id': usuarioId,
       'mesa_id': mesaId,
     });
+  };
+});
+
+// ─── Liberar veedor (queda disponible, sin mesa) ─────────────────────────────
+final liberarVeedorProvider =
+    Provider<Future<void> Function(String usuarioId)>((ref) {
+  return (usuarioId) async {
+    final supabase = ref.read(supabaseClientProvider);
+    await supabase
+        .from('veedor_mesas')
+        .update({'mesa_id': null}).eq('usuario_id', usuarioId);
   };
 });

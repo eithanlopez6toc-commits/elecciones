@@ -77,6 +77,7 @@ class Acta {
   final double? gpsLng;
   final EstadoActa estado;
   final DateTime createdAt;
+  final bool pendienteSync;
 
   const Acta({
     required this.id,
@@ -92,13 +93,15 @@ class Acta {
     this.gpsLng,
     required this.estado,
     required this.createdAt,
+    this.pendienteSync = false,
   });
 
   bool get esConsistente {
     if (totalSufragantes == null) return true;
     final sumaOrganizaciones =
         votosPorOrganizacion?.values.fold<int>(0, (a, b) => a + b) ?? 0;
-    return (sumaOrganizaciones + votosBlancos + votosNulos) <= totalSufragantes!;
+    return (sumaOrganizaciones + votosBlancos + votosNulos) <=
+        totalSufragantes!;
   }
 
   Acta copyWith({
@@ -115,6 +118,7 @@ class Acta {
     double? gpsLng,
     EstadoActa? estado,
     DateTime? createdAt,
+    bool? pendienteSync,
   }) {
     return Acta(
       id: id ?? this.id,
@@ -130,6 +134,7 @@ class Acta {
       gpsLng: gpsLng ?? this.gpsLng,
       estado: estado ?? this.estado,
       createdAt: createdAt ?? this.createdAt,
+      pendienteSync: pendienteSync ?? this.pendienteSync,
     );
   }
 }

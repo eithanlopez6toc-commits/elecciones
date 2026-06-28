@@ -37,6 +37,7 @@ class ActaModel {
       gpsLng: (data['gps_lng'] as num?)?.toDouble(),
       estado: EstadoActaX.fromDb(data['estado'] as String),
       createdAt: DateTime.parse(data['created_at'] as String),
+      pendienteSync: data['pendiente_sync'] as bool? ?? false,
     );
   }
 }

@@ -102,6 +102,83 @@ final actasDeRecintoProvider =
       .toList();
 });
 
+// ─── Mesas de un recinto ─────────────────────────────────────────────────────
+final mesasDeRecintoProvProv =
+    FutureProvider.family<List<MesaJrv>, int>((ref, recintoId) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase
+      .from(SupabaseConstants.mesasJrvTable)
+      .select()
+      .eq('recinto_id', recintoId)
+      .order('numero_mesa');
+  return (res as List)
+      .map((r) => MesaJrvModel.fromMap(r as Map<String, dynamic>))
+      .toList();
+});
+
+// ─── Mesas + progreso de actas (para el detalle de un recinto) ──────────────
+// CAMBIO NUEVO: combina las mesas reales con sus actas para poder mostrar,
+// por cada mesa, cuántas actas tiene (0, 1 o 2), qué dignidad falta y la
+// ubicación GPS desde donde se registró cada una.
+class MesaConProgreso {
+  final MesaJrv mesa;
+  final List<Acta> actas;
+
+  const MesaConProgreso({required this.mesa, required this.actas});
+
+  int get totalRegistradas => actas.length;
+  // Cada mesa puede tener máximo 2 actas posibles: Alcalde + Prefecto.
+  double get porcentaje => totalRegistradas / 2;
+
+  bool get tieneAlcalde => actas.any((a) => a.dignidad == Dignidad.alcalde);
+  bool get tienePrefecto => actas.any((a) => a.dignidad == Dignidad.prefecto);
+
+  Acta? get actaAlcalde {
+    for (final a in actas) {
+      if (a.dignidad == Dignidad.alcalde) return a;
+    }
+    return null;
+  }
+
+  Acta? get actaPrefecto {
+    for (final a in actas) {
+      if (a.dignidad == Dignidad.prefecto) return a;
+    }
+    return null;
+  }
+
+  // Usamos la primera acta de la mesa que tenga coordenadas capturadas.
+  Acta? get actaConGps {
+    for (final a in actas) {
+      if (a.gpsLat != null && a.gpsLng != null) return a;
+    }
+    return null;
+  }
+}
+
+final mesasConProgresoProvider =
+    FutureProvider.family<List<MesaConProgreso>, int>((ref, recintoId) async {
+  final mesas = await ref.watch(mesasDeRecintoProvProv(recintoId).future);
+  final actas = await ref.watch(actasDeRecintoProvider(recintoId).future);
+
+  return mesas.map((mesa) {
+    final actasDeMesa = actas.where((a) => a.mesaId == mesa.id).toList();
+    return MesaConProgreso(mesa: mesa, actas: actasDeMesa);
+  }).toList();
+});
+
+// ─── Total REAL de mesas/JRV registradas en el sistema ──────────────────────
+// CAMBIO NUEVO: este es el número que se debe usar en el KPI "TOTAL JRV
+// (MESAS)" de Inicio. A diferencia de sumar recinto.numMesas (que es el
+// número que el coordinador tipeó al crear el recinto), esto cuenta las
+// filas que de verdad existen en la tabla mesas_jrv, así nunca se
+// desincroniza con la realidad.
+final totalMesasGlobalProvider = FutureProvider<int>((ref) async {
+  final supabase = ref.watch(supabaseClientProvider);
+  final res = await supabase.from(SupabaseConstants.mesasJrvTable).select('id');
+  return (res as List).length;
+});
+
 // ─── Dashboard: votos consolidados por candidato ─────────────────────────────
 class VotosCandidato {
   final int candidatoId;
@@ -165,21 +242,10 @@ final dashboardVotosProvider =
   return lista;
 });
 
-// ─── Mesas de un recinto ─────────────────────────────────────────────────────
-final mesasDeRecintoProvProv =
-    FutureProvider.family<List<MesaJrv>, int>((ref, recintoId) async {
-  final supabase = ref.watch(supabaseClientProvider);
-  final res = await supabase
-      .from(SupabaseConstants.mesasJrvTable)
-      .select()
-      .eq('recinto_id', recintoId)
-      .order('numero_mesa');
-  return (res as List)
-      .map((r) => MesaJrvModel.fromMap(r as Map<String, dynamic>))
-      .toList();
-});
-
 // ─── Crear recinto ────────────────────────────────────────────────────────────
+// CAMBIO: ahora también crea automáticamente las N mesas/JRV asociadas al
+// recinto en la tabla mesas_jrv, para que el número de mesas mostrado en
+// pantalla siempre coincida con lo realmente registrado.
 final crearRecintoProvider = Provider<
     Future<Recinto> Function(
       String canton,
@@ -202,7 +268,24 @@ final crearRecintoProvider = Provider<
         })
         .select()
         .single();
-    return RecintoModel.fromMap(res);
+    final recinto = RecintoModel.fromMap(res);
+
+    // Crea las N mesas de golpe. Si tu tabla mesas_jrv tiene alguna otra
+    // columna NOT NULL sin valor por defecto, agrégala aquí también.
+    if (numJrv > 0) {
+      final mesasParaInsertar = List.generate(
+        numJrv,
+        (i) => {
+          'recinto_id': recinto.id,
+          'numero_mesa': i + 1,
+        },
+      );
+      await supabase
+          .from(SupabaseConstants.mesasJrvTable)
+          .insert(mesasParaInsertar);
+    }
+
+    return recinto;
   };
 });
 

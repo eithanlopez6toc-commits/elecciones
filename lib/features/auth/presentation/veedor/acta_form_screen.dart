@@ -1,56 +1,105 @@
 // lib/features/auth/presentation/veedor/acta_form_screen.dart
 //
-// ROLES:
-//  - soloLectura: false → veedor: puede crear nueva acta
-//  - soloLectura: false + actaExistente != null → veedor: edita su acta
-//  - soloLectura: true  → coordinador_recinto: ve datos y puede "Actualizar acta"
-//    (corregir votos, foto, gps igual que el veedor, misma lógica guardarActa)
+// CAMBIOS vs versión anterior:
+//  1. Foto SIEMPRE horizontal (corrección EXIF con paquete image)
+//  2. Foto completa (BoxFit.contain) + toque para agrandar (InteractiveViewer)
+//  3. Guardar → Diálogo éxito → [Aceptar] → Vista previa + botón "Actualizar acta"
+//  4. GPS: mapa OSM con marcador (flutter_map) + coordenadas en texto
+//  5. GPS desactivado → diálogo "Activar GPS"; sin permiso → diálogo "Otorgar permisos"
+//  6. Votos superan límite → diálogo de error y bloqueo del guardado
+//  7. Persistencia offline con sqflite + sync automático al reconectar
+// ─────────────────────────────────────────────────────────────────────────────
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+
 import 'package:camera/camera.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image/image.dart' as img;
+import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../../domain/entities/acta.dart';
 import '../../domain/entities/organizacion_politica.dart';
 import 'acta_form_controller.dart';
-import '../../domain/entities/acta.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM — Portal Electoral Seguro (unificado con coordinador)
+// DESIGN TOKENS
 // ═════════════════════════════════════════════════════════════════════════════
-class _Tema {
-  static const primary             = Color(0xFF003EC7);
-  static const outline             = Color(0xFFE2E8F0);
-  static const cardRadius          = 12.0;
-  static const background          = Color(0xFFF7F8FA);
+class _T {
+  static const primary = Color(0xFF003EC7);
+  static const outline = Color(0xFFE2E8F0);
+  static const cardRadius = 12.0;
+  static const background = Color(0xFFF7F8FA);
   static const surfaceContainerLow = Color(0xFFEFF6FF);
-  static const onSurface           = Color(0xFF0F172A);
-  static const onSurfaceVariant    = Color(0xFF475569);
-  static const greyLight           = Color(0xFF94A3B8);
-  static const success             = Color(0xFF10B981);
-  static const successContainer    = Color(0xFFECFDF5);
-  static const errorColor          = Color(0xFFEF4444);
-  static const errorContainer      = Color(0xFFFEF2F2);
-  static const warningColor        = Color(0xFFF59E0B);
-  static const warningContainer    = Color(0xFFFFFBEB);
-  static const brandAccent         = Color(0xFFEFF6FF);
+  static const onSurface = Color(0xFF0F172A);
+  static const onSurfaceVariant = Color(0xFF475569);
+  static const greyLight = Color(0xFF94A3B8);
+  static const success = Color(0xFF10B981);
+  static const successContainer = Color(0xFFECFDF5);
+  static const errorColor = Color(0xFFEF4444);
+  static const errorContainer = Color(0xFFFEF2F2);
+  static const warningColor = Color(0xFFF59E0B);
+  static const warningContainer = Color(0xFFFFFBEB);
+  static const brandAccent = Color(0xFFEFF6FF);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DATOS DE PARTIDOS POR DIGNIDAD
+// ═════════════════════════════════════════════════════════════════════════════
+const _partidosPorDignidad = {
+  Dignidad.prefecto: [
+    '1. UNES',
+    '5. Movimiento Revolución Ciudadana',
+    '6. Partido Social Cristiano',
+    '12. Avanza',
+    '18. Pachakutik',
+  ],
+  Dignidad.alcalde: [
+    '1. UNES',
+    '5. Movimiento Revolución Ciudadana',
+    '6. Partido Social Cristiano',
+    '12. Avanza',
+    '18. Pachakutik',
+  ],
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HELPER: corregir rotación EXIF y forzar landscape
+// ═════════════════════════════════════════════════════════════════════════════
+Future<File> _corregirRotacionFoto(XFile xfile) async {
+  final bytes = await xfile.readAsBytes();
+  final original = img.decodeImage(bytes);
+  if (original == null) return File(xfile.path);
+
+  // bakeOrientation aplica la rotación EXIF y la elimina del metadata
+  img.Image corregida = img.bakeOrientation(original);
+
+  // Si la imagen queda vertical (portrait), rotar 90° para forzar landscape
+  if (corregida.height > corregida.width) {
+    corregida = img.copyRotate(corregida, angle: 90);
+  }
+
+  final file = File(xfile.path);
+  await file.writeAsBytes(img.encodeJpg(corregida, quality: 90));
+  return file;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // PANTALLA PRINCIPAL
 // ═════════════════════════════════════════════════════════════════════════════
 class ActaFormScreen extends ConsumerStatefulWidget {
-  final int    mesaId;
+  final int mesaId;
   final String mesaNombre;
   final String recintoNombre;
   final Dignidad dignidad;
-  final int    totalSufragantes;
+  final int totalSufragantes;
   final List<OrganizacionPolitica> organizaciones;
   final String userId;
-  final Acta?  actaExistente;
-
-  /// false → veedor (crear o editar), true → coordinador_recinto (editar/corregir).
-  /// En ambos casos se guarda con guardarActa(); la diferencia es visual y de badge.
+  final Acta? actaExistente;
   final bool soloLectura;
 
   const ActaFormScreen({
@@ -76,18 +125,21 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
   late final TextEditingController _ctrlBlancos;
   late final ActaFormArgs _args;
 
-  bool get _esEdicion     => widget.actaExistente != null;
+  bool _modoCorreccion = false;
+
+  bool get _esEdicion => widget.actaExistente != null;
   bool get _esCoordinador => widget.soloLectura;
+  bool get _editable => !_esCoordinador || _modoCorreccion;
 
   @override
   void initState() {
     super.initState();
     _args = ActaFormArgs(
-      mesaId:           widget.mesaId,
-      dignidad:         widget.dignidad,
+      mesaId: widget.mesaId,
+      dignidad: widget.dignidad,
       totalSufragantes: widget.totalSufragantes,
-      organizaciones:   widget.organizaciones,
-      actaExistente:    widget.actaExistente,
+      organizaciones: widget.organizaciones,
+      actaExistente: widget.actaExistente,
     );
 
     final votosExistentes = widget.actaExistente?.votosPorOrganizacion ?? {};
@@ -97,8 +149,26 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           text: (votosExistentes[o.id.toString()] ?? 0).toString(),
         ),
     };
-    _ctrlNulos   = TextEditingController(text: (widget.actaExistente?.votosNulos   ?? 0).toString());
-    _ctrlBlancos = TextEditingController(text: (widget.actaExistente?.votosBlancos ?? 0).toString());
+    _ctrlNulos = TextEditingController(
+        text: (widget.actaExistente?.votosNulos ?? 0).toString());
+    _ctrlBlancos = TextEditingController(
+        text: (widget.actaExistente?.votosBlancos ?? 0).toString());
+
+    // Modal informativo al abrir (solo creación, solo veedor)
+    if (!_esEdicion && !_esCoordinador) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mostrarModalPartidos();
+      });
+    }
+
+    // Escuchar reconexión para sincronizar pendientes
+    Connectivity().onConnectivityChanged.listen((results) {
+      if (!results.contains(ConnectivityResult.none) && mounted) {
+        ref
+            .read(actaFormProvider(_args).notifier)
+            .sincronizarSiHayConexion(userId: widget.userId);
+      }
+    });
   }
 
   @override
@@ -109,59 +179,404 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     super.dispose();
   }
 
-  // ── Cámara con permiso explícito ──────────────────────────────────────────
+  // ── Modal de partidos al abrir ────────────────────────────────────────────
+  void _mostrarModalPartidos() {
+    final partidos = _partidosPorDignidad[widget.dignidad] ?? [];
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Row(children: [
+          const Icon(Icons.how_to_vote_outlined, color: _T.primary, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Organizaciones — ${widget.dignidad.etiqueta}',
+              style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w700, color: _T.primary),
+            ),
+          ),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esta mesa tiene ${partidos.length} organizaciones políticas para ${widget.dignidad.etiqueta}:',
+              style: const TextStyle(fontSize: 13, color: _T.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            ...partidos.map(
+              (p) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: _T.primary),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(p,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: _T.onSurface,
+                            fontWeight: FontWeight.w500)),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _T.warningContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(children: const [
+                Icon(Icons.info_outline, size: 14, color: _T.warningColor),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'El total de votos no puede superar el total de sufragantes de la mesa.',
+                    style: TextStyle(fontSize: 11, color: _T.warningColor),
+                  ),
+                ),
+              ]),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: _T.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Cámara: verificar GPS y permisos antes de abrir ──────────────────────
   Future<void> _abrirCamara() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) {
+    // 1. Verificar permiso de ubicación
+    var locationStatus = await Permission.locationWhenInUse.status;
+
+    if (locationStatus.isDenied) {
+      locationStatus = await Permission.locationWhenInUse.request();
+    }
+
+    if (locationStatus.isDenied || locationStatus.isPermanentlyDenied) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Row(children: [
+            Icon(Icons.gps_off, color: _T.errorColor, size: 22),
+            SizedBox(width: 8),
+            Text('Permiso GPS requerido',
+                style: TextStyle(
+                    fontSize: 15,
+                    color: _T.errorColor,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          content: const Text(
+            'Se necesita acceso a la ubicación GPS para validar y registrar el acta correctamente.\n\n'
+            'Sin el permiso GPS no es posible fotografiar el acta.',
+            style: TextStyle(fontSize: 13, color: _T.onSurface),
+          ),
+          actions: [
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _T.onSurfaceVariant,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _T.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                if (locationStatus.isPermanentlyDenied) {
+                  // Abre configuración del sistema
+                  await openAppSettings();
+                } else {
+                  await Permission.locationWhenInUse.request();
+                }
+              },
+              child: const Text('Otorgar permisos'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // 2. Verificar si el servicio GPS está activado
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Row(children: [
+            Icon(Icons.location_off, color: _T.warningColor, size: 22),
+            SizedBox(width: 8),
+            Text('GPS desactivado',
+                style: TextStyle(
+                    fontSize: 15,
+                    color: _T.warningColor,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          content: const Text(
+            'El GPS de tu dispositivo está desactivado.\n\n'
+            'Actívalo para poder fotografiar el acta con la ubicación de la mesa.',
+            style: TextStyle(fontSize: 13, color: _T.onSurface),
+          ),
+          actions: [
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _T.onSurfaceVariant,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _T.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Geolocator.openLocationSettings();
+              },
+              child: const Text('Activar GPS'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // 3. Verificar permiso de cámara
+    final camStatus = await Permission.camera.request();
+    if (!camStatus.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Se necesita permiso de cámara para fotografiar el acta.'),
-          backgroundColor: _Tema.warningColor,
+          content:
+              Text('Se necesita permiso de cámara para fotografiar el acta.'),
+          backgroundColor: _T.warningColor,
         ));
       }
       return;
     }
+
     final cameras = await availableCameras();
     if (cameras.isEmpty || !mounted) return;
+
+    // 4. Abrir cámara
     final xfile = await Navigator.of(context).push<XFile>(
-      MaterialPageRoute(builder: (_) => _CameraCapturePage(camera: cameras.first)),
+      MaterialPageRoute(
+          builder: (_) => _CameraCapturePage(camera: cameras.first)),
     );
-    if (xfile != null) {
-      await ref.read(actaFormProvider(_args).notifier).procesarFotoDesdeCamera(xfile);
-    }
-  }
 
-  // ── GPS con permiso explícito ─────────────────────────────────────────────
-  Future<void> _solicitarGps() async {
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
-    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Se necesita permiso de ubicación para validar el recinto.'),
-          backgroundColor: _Tema.warningColor,
-        ));
+    // 5. Procesar foto: corregir rotación y capturar GPS
+    if (xfile != null && mounted) {
+      // Mostrar spinner en estado
+      ref.read(actaFormProvider(_args).notifier).setProcesandoFoto(true);
+
+      try {
+        // Corregir rotación EXIF → siempre landscape
+        final fileCorregido = await _corregirRotacionFoto(xfile);
+
+        // Procesar en el controller (GPS + guardar en estado)
+        await ref
+            .read(actaFormProvider(_args).notifier)
+            .procesarFotoDesdeCamera(XFile(fileCorregido.path));
+      } catch (e) {
+        ref.read(actaFormProvider(_args).notifier).setProcesandoFoto(false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error al procesar foto: $e'),
+            backgroundColor: _T.errorColor,
+          ));
+        }
       }
-      return;
     }
-    ref.read(actaFormProvider(_args).notifier).obtenerGps();
   }
 
-  // ── Guardar — mismo método para veedor y coordinador ─────────────────────
+  // ── Guardar con validación previa ─────────────────────────────────────────
   Future<void> _guardar() async {
-    await ref.read(actaFormProvider(_args).notifier).guardarActa(userId: widget.userId);
     final state = ref.read(actaFormProvider(_args));
-    if (state.guardadoExito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_esEdicion ? 'Acta actualizada correctamente' : 'Acta registrada correctamente'),
-        backgroundColor: _Tema.success,
-      ));
-      Navigator.of(context).pop(true);
+
+    // BLOQUEO: votos superan el límite → diálogo de error
+    if (!state.esConsistente) {
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Row(children: [
+            Icon(Icons.warning_amber_rounded, color: _T.errorColor, size: 22),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Votos inconsistentes',
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: _T.errorColor,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ]),
+          content: Text(
+            'El total de votos contabilizados (${state.totalContabilizado}) '
+            'supera el total de sufragantes de la mesa (${state.totalSufragantes}).\n\n'
+            'Corrige los valores ingresados antes de registrar el acta.',
+            style: const TextStyle(fontSize: 13, color: _T.onSurface),
+          ),
+          actions: [
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _T.errorColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Corregir votos',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+      return; // NO continúa con el guardado
+    }
+
+    // Guardar
+    await ref
+        .read(actaFormProvider(_args).notifier)
+        .guardarActa(userId: widget.userId);
+
+    final stateActualizado = ref.read(actaFormProvider(_args));
+    if (stateActualizado.guardadoExito && mounted) {
+      // Paso 1: diálogo de ÉXITO
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: stateActualizado.pendienteSync
+                    ? _T.warningContainer
+                    : _T.successContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                stateActualizado.pendienteSync
+                    ? Icons.cloud_off
+                    : Icons.check_circle_outline,
+                color: stateActualizado.pendienteSync
+                    ? _T.warningColor
+                    : _T.success,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              stateActualizado.pendienteSync
+                  ? 'Acta guardada localmente'
+                  : (_modoCorreccion
+                      ? '¡Corrección guardada!'
+                      : (_esEdicion
+                          ? '¡Acta actualizada!'
+                          : '¡Acta registrada!')),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: stateActualizado.pendienteSync
+                    ? _T.warningColor
+                    : _T.success,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              stateActualizado.pendienteSync
+                  ? 'El acta se sincronizará automáticamente con el servidor cuando haya conexión a internet.'
+                  : 'Los datos fueron enviados correctamente al servidor electoral.',
+              style: const TextStyle(fontSize: 13, color: _T.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ]),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: stateActualizado.pendienteSync
+                    ? _T.warningColor
+                    : _T.primary,
+                minimumSize: const Size(160, 44),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              // Cerrar diálogo → luego se muestra vista previa
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Aceptar',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+
+      // Paso 2: vista previa (el usuario sigue en la pantalla)
+      if (mounted) await _mostrarVistaPrevia(stateActualizado);
     }
   }
 
+  // ── Vista previa post-guardado (dialog) ───────────────────────────────────
+  Future<void> _mostrarVistaPrevia(ActaFormState state) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => _DialogVistaPrevia(
+        state: state,
+        organizaciones: widget.organizaciones,
+        mesaNombre: widget.mesaNombre,
+        recintoNombre: widget.recintoNombre,
+        dignidad: widget.dignidad.etiqueta,
+        pendienteSync: state.pendienteSync,
+        // Solo cierra el diálogo — el usuario queda en ActaFormScreen
+        // y puede pulsar "Actualizar acta"
+        onCerrar: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(actaFormProvider(_args));
@@ -170,192 +585,305 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
       if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(next.error!),
-          backgroundColor: _Tema.errorColor,
-          duration: const Duration(seconds: 4),
+          backgroundColor: _T.errorColor,
+          duration: const Duration(seconds: 5),
         ));
       }
     });
 
     return Scaffold(
-      backgroundColor: _Tema.background,
+      backgroundColor: _T.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        foregroundColor: _Tema.primary,
+        foregroundColor: _T.primary,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: _Tema.outline, height: 1.0),
+          child: Container(color: _T.outline, height: 1.0),
         ),
-        leading: const BackButton(color: _Tema.primary),
-        title: Row(
-          children: [
-            const Icon(Icons.shield_outlined, color: _Tema.primary, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _esCoordinador
-                        ? 'Corrección de acta'
-                        : (_esEdicion ? 'Editar acta' : 'Registrar acta'),
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700, color: _Tema.primary),
-                  ),
-                  Text(
-                    'Mesa ${widget.mesaNombre} — ${widget.dignidad.etiqueta}',
-                    style: const TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant),
-                  ),
-                ],
+        leading: const BackButton(color: _T.primary),
+        title: Row(children: [
+          const Icon(Icons.shield_outlined, color: _T.primary, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _esCoordinador
+                      ? 'Detalle del acta'
+                      : (_esEdicion ? 'Editar acta' : 'Registrar acta'),
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _T.primary),
+                ),
+                Text(
+                  'Mesa ${widget.mesaNombre} — ${widget.dignidad.etiqueta}',
+                  style:
+                      const TextStyle(fontSize: 11, color: _T.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ]),
+        actions: [
+          if (_esEdicion && !_esCoordinador)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: _Pill(
+                    label: 'Editando',
+                    color: _T.warningColor,
+                    bg: _T.warningContainer),
               ),
             ),
-          ],
-        ),
-        actions: [
           if (_esCoordinador)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _Tema.warningContainer,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: _Tema.warningColor.withOpacity(0.3)),
-                  ),
-                  child: const Text('Coordinador',
-                      style: TextStyle(
-                          fontSize: 10, color: _Tema.warningColor, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            )
-          else if (_esEdicion)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _Tema.warningContainer,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: _Tema.warningColor.withOpacity(0.3)),
-                  ),
-                  child: const Text('Editando',
-                      style: TextStyle(
-                          fontSize: 10, color: _Tema.warningColor, fontWeight: FontWeight.bold)),
-                ),
+                child: _Pill(
+                    label: 'Coordinador',
+                    color: _T.warningColor,
+                    bg: _T.warningContainer),
               ),
             ),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _CardInfoMesa(
-              recinto:          widget.recintoNombre,
-              mesa:             widget.mesaNombre,
-              dignidad:         widget.dignidad.etiqueta,
-              totalSufragantes: widget.totalSufragantes,
+        child: Column(children: [
+          // Banner offline
+          if (state.pendienteSync) ...[
+            _BannerOffline(
+              onReintentarSync: () => ref
+                  .read(actaFormProvider(_args).notifier)
+                  .sincronizarSiHayConexion(userId: widget.userId),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          _CardInfoMesa(
+            recinto: widget.recintoNombre,
+            mesa: widget.mesaNombre,
+            dignidad: widget.dignidad.etiqueta,
+            totalSufragantes: widget.totalSufragantes,
+          ),
+          const SizedBox(height: 12),
+
+          if (_esCoordinador && _esEdicion) ...[
+            _CardEstadoActa(
+              acta: widget.actaExistente!,
+              modoCorreccion: _modoCorreccion,
+              onActivarCorreccion: () => setState(() => _modoCorreccion = true),
             ),
             const SizedBox(height: 12),
+          ],
 
-            // Si es coordinador y hay acta, muestra primero el panel de estado
-            if (_esCoordinador && _esEdicion) ...[
-              _CardEstadoActa(acta: widget.actaExistente!),
-              const SizedBox(height: 12),
+          _CardVotos(
+            organizaciones: widget.organizaciones,
+            ctrlOrg: _ctrlOrg,
+            ctrlNulos: _ctrlNulos,
+            ctrlBlancos: _ctrlBlancos,
+            state: state,
+            editable: _editable,
+            onOrgChanged: (id, val) => ref
+                .read(actaFormProvider(_args).notifier)
+                .actualizarVotosOrganizacion(id, val),
+            onNulosChanged: (val) => ref
+                .read(actaFormProvider(_args).notifier)
+                .actualizarVotosNulos(val),
+            onBlancosChanged: (val) => ref
+                .read(actaFormProvider(_args).notifier)
+                .actualizarVotosBlancos(val),
+          ),
+          const SizedBox(height: 12),
+
+          _CardFoto(
+            fotoFile: state.fotoFile,
+            urlFotoExistente: widget.actaExistente?.urlFotoActa,
+            procesandoFoto: state.procesandoFoto,
+            editable: _editable,
+            onTomarFoto: _abrirCamara,
+          ),
+          const SizedBox(height: 12),
+
+          _CardGps(
+            lat: state.gpsLat,
+            lng: state.gpsLng,
+            cargando: state.cargandoGps,
+          ),
+          const SizedBox(height: 16),
+
+          // Botón principal (solo cuando es editable)
+          if (_editable) ...[
+            // Aviso visual si votos superan el límite (además del diálogo)
+            if (!state.esConsistente) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: _T.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _T.errorColor.withOpacity(0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.block, size: 16, color: _T.errorColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No puedes guardar: los votos (${state.totalContabilizado}) '
+                      'superan los sufragantes (${state.totalSufragantes}).',
+                      style:
+                          const TextStyle(fontSize: 12, color: _T.errorColor),
+                    ),
+                  ),
+                ]),
+              ),
             ],
 
-            _CardVotos(
-              organizaciones:   widget.organizaciones,
-              ctrlOrg:          _ctrlOrg,
-              ctrlNulos:        _ctrlNulos,
-              ctrlBlancos:      _ctrlBlancos,
-              state:            state,
-              onOrgChanged:     (id, val) => ref.read(actaFormProvider(_args).notifier).actualizarVotosOrganizacion(id, val),
-              onNulosChanged:   (val)     => ref.read(actaFormProvider(_args).notifier).actualizarVotosNulos(val),
-              onBlancosChanged: (val)     => ref.read(actaFormProvider(_args).notifier).actualizarVotosBlancos(val),
-            ),
-            const SizedBox(height: 12),
-            _CardFoto(
-              fotoFile:         state.fotoFile,
-              urlFotoExistente: widget.actaExistente?.urlFotoActa,
-              onTomarFoto:      _abrirCamara,
-            ),
-            const SizedBox(height: 12),
-            _CardGps(
-              lat:      state.gpsLat,
-              lng:      state.gpsLng,
-              cargando: state.cargandoGps,
-              onObtener: _solicitarGps,
-            ),
-            const SizedBox(height: 16),
-
-            // ── Botón principal ────────────────────────────────────────────
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: _Tema.primary,
+                // Botón gris si hay inconsistencia (visual de bloqueo)
+                backgroundColor:
+                    !state.esConsistente ? _T.greyLight : _T.primary,
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: state.guardando ? null : _guardar,
               icon: state.guardando
                   ? const SizedBox(
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : Icon(_esEdicion || _esCoordinador
                       ? Icons.update_outlined
                       : Icons.save_outlined),
               label: Text(
                 state.guardando
                     ? 'Guardando...'
-                    : (_esCoordinador
-                        ? 'Actualizar acta'
+                    : (_modoCorreccion
+                        ? 'Guardar corrección'
                         : (_esEdicion ? 'Actualizar acta' : 'Registrar acta')),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _esCoordinador
-                  ? 'Como coordinador puedes corregir los datos del acta.'
+              _modoCorreccion
+                  ? 'Como coordinador estás corrigiendo los datos del acta.'
                   : (_esEdicion
                       ? 'Puedes corregir los datos o la foto en cualquier momento.'
                       : 'El acta quedará en estado "ingresada" hasta ser validada.'),
-              style: const TextStyle(fontSize: 11, color: _Tema.onSurfaceVariant),
+              style: const TextStyle(fontSize: 11, color: _T.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
           ],
-        ),
+          const SizedBox(height: 20),
+        ]),
       ),
     );
   }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: ESTADO ACTUAL (visible solo para coordinador, informativa)
+// BANNER OFFLINE
+// ═════════════════════════════════════════════════════════════════════════════
+class _BannerOffline extends StatelessWidget {
+  final VoidCallback onReintentarSync;
+  const _BannerOffline({required this.onReintentarSync});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _T.warningContainer,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _T.warningColor.withOpacity(0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.cloud_off, size: 16, color: _T.warningColor),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Guardado localmente. Se enviará al servidor cuando haya conexión.',
+            style: TextStyle(fontSize: 12, color: _T.warningColor),
+          ),
+        ),
+        GestureDetector(
+          onTap: onReintentarSync,
+          child: const Icon(Icons.sync, size: 16, color: _T.warningColor),
+        ),
+      ]),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TARJETA: ESTADO ACTUAL (coordinador) + botón corrección
 // ═════════════════════════════════════════════════════════════════════════════
 class _CardEstadoActa extends StatelessWidget {
   final Acta acta;
-  const _CardEstadoActa({required this.acta});
+  final bool modoCorreccion;
+  final VoidCallback onActivarCorreccion;
+
+  const _CardEstadoActa({
+    required this.acta,
+    required this.modoCorreccion,
+    required this.onActivarCorreccion,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _Seccion(
       titulo: 'Estado del acta',
-      icono:  Icons.verified_outlined,
-      child: Row(
+      icono: Icons.verified_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Estado actual:',
-              style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
-          const SizedBox(width: 10),
-          _pillEstado(acta.estado),
-          const Spacer(),
-          const Icon(Icons.info_outline, size: 14, color: _Tema.greyLight),
-          const SizedBox(width: 4),
-          const Text('Puedes corregir y actualizar',
-              style: TextStyle(fontSize: 11, color: _Tema.greyLight)),
+          Row(children: [
+            const Text('Estado actual:',
+                style: TextStyle(fontSize: 13, color: _T.onSurfaceVariant)),
+            const SizedBox(width: 10),
+            _pillEstado(acta.estado),
+          ]),
+          const SizedBox(height: 10),
+          if (!modoCorreccion)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _T.warningColor,
+                side: const BorderSide(color: _T.warningColor),
+                minimumSize: const Size.fromHeight(40),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: onActivarCorreccion,
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Corregir datos del acta',
+                  style: TextStyle(fontSize: 13)),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _T.warningContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(children: [
+                Icon(Icons.edit_outlined, size: 14, color: _T.warningColor),
+                SizedBox(width: 6),
+                Text('Modo corrección activado',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: _T.warningColor,
+                        fontWeight: FontWeight.w600)),
+              ]),
+            ),
         ],
       ),
     );
@@ -363,18 +891,22 @@ class _CardEstadoActa extends StatelessWidget {
 
   Widget _pillEstado(EstadoActa estado) {
     return switch (estado) {
-      EstadoActa.ingresada  => _pill('Ingresada',       _Tema.primary,    _Tema.brandAccent),
-      EstadoActa.revisada   => _pill('Escrutado 100%',  _Tema.success,    _Tema.successContainer),
-      EstadoActa.conNovedad => _pill('Con novedad',     _Tema.errorColor, _Tema.errorContainer),
+      EstadoActa.ingresada => _pill('Ingresada', _T.primary, _T.brandAccent),
+      EstadoActa.revisada =>
+        _pill('Escrutado 100%', _T.success, _T.successContainer),
+      EstadoActa.conNovedad =>
+        _pill('Con novedad', _T.errorColor, _T.errorContainer),
     };
   }
 
   Widget _pill(String label, Color color, Color bg) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
-    child: Text(label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+      );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -384,26 +916,36 @@ class _CardInfoMesa extends StatelessWidget {
   final String recinto, mesa, dignidad;
   final int totalSufragantes;
   const _CardInfoMesa({
-    required this.recinto, required this.mesa,
-    required this.dignidad, required this.totalSufragantes,
+    required this.recinto,
+    required this.mesa,
+    required this.dignidad,
+    required this.totalSufragantes,
   });
 
   @override
   Widget build(BuildContext context) {
     return _Seccion(
       titulo: 'Información de la mesa',
-      icono:  Icons.place_outlined,
+      icono: Icons.place_outlined,
       child: Column(children: [
         Row(children: [
-          Expanded(child: _Campo(label: 'Recinto',    valor: recinto,   disabled: true)),
+          Expanded(
+              child: _Campo(label: 'Recinto', valor: recinto, disabled: true)),
           const SizedBox(width: 10),
-          Expanded(child: _Campo(label: 'Mesa / JRV', valor: mesa,      disabled: true)),
+          Expanded(
+              child: _Campo(label: 'Mesa / JRV', valor: mesa, disabled: true)),
         ]),
         const SizedBox(height: 10),
         Row(children: [
-          Expanded(child: _Campo(label: 'Dignidad',          valor: dignidad,                  disabled: true)),
+          Expanded(
+              child:
+                  _Campo(label: 'Dignidad', valor: dignidad, disabled: true)),
           const SizedBox(width: 10),
-          Expanded(child: _Campo(label: 'Total sufragantes', valor: totalSufragantes.toString(), disabled: true)),
+          Expanded(
+              child: _Campo(
+                  label: 'Total sufragantes',
+                  valor: totalSufragantes.toString(),
+                  disabled: true)),
         ]),
       ]),
     );
@@ -418,64 +960,110 @@ class _CardVotos extends StatelessWidget {
   final Map<int, TextEditingController> ctrlOrg;
   final TextEditingController ctrlNulos, ctrlBlancos;
   final ActaFormState state;
+  final bool editable;
   final void Function(int, int) onOrgChanged;
   final void Function(int) onNulosChanged, onBlancosChanged;
 
   const _CardVotos({
-    required this.organizaciones, required this.ctrlOrg,
-    required this.ctrlNulos,      required this.ctrlBlancos,
-    required this.state,          required this.onOrgChanged,
-    required this.onNulosChanged, required this.onBlancosChanged,
+    required this.organizaciones,
+    required this.ctrlOrg,
+    required this.ctrlNulos,
+    required this.ctrlBlancos,
+    required this.state,
+    required this.editable,
+    required this.onOrgChanged,
+    required this.onNulosChanged,
+    required this.onBlancosChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final superanLimite = !state.esConsistente;
+
     return _Seccion(
       titulo: 'Votos por organización política',
-      icono:  Icons.how_to_vote_outlined,
+      icono: Icons.how_to_vote_outlined,
       child: Column(children: [
-        ...organizaciones.map((org) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _FilaVotos(
-            label:      '${org.listaNumero}. ${org.nombre}',
-            controller: ctrlOrg[org.id]!,
-            color:      _Tema.surfaceContainerLow,
-            textColor:  _Tema.primary,
-            onChanged:  (v) => onOrgChanged(org.id, int.tryParse(v) ?? 0),
+        // Alerta en tiempo real cuando se supera el límite
+        if (superanLimite)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _T.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _T.errorColor.withOpacity(0.3)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.warning_amber_rounded,
+                  size: 16, color: _T.errorColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Los votos (${state.totalContabilizado}) superan el total de sufragantes (${state.totalSufragantes}). '
+                  'Revisa los valores ingresados.',
+                  style: const TextStyle(fontSize: 12, color: _T.errorColor),
+                ),
+              ),
+            ]),
           ),
-        )),
-        Container(height: 1, color: _Tema.outline, margin: const EdgeInsets.symmetric(vertical: 8)),
+
+        ...organizaciones.map((org) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _FilaVotos(
+                label: '${org.listaNumero}. ${org.nombre}',
+                controller: ctrlOrg[org.id]!,
+                color: _T.surfaceContainerLow,
+                textColor: _T.primary,
+                enabled: editable,
+                onChanged: (v) => onOrgChanged(org.id, int.tryParse(v) ?? 0),
+              ),
+            )),
+
+        Container(
+            height: 1,
+            color: _T.outline,
+            margin: const EdgeInsets.symmetric(vertical: 8)),
+
         _FilaVotos(
-          label:     'Votos nulos',
+          label: 'Votos nulos',
           controller: ctrlNulos,
-          color:     _Tema.warningContainer,
-          textColor: _Tema.warningColor,
+          color: _T.warningContainer,
+          textColor: _T.warningColor,
+          enabled: editable,
           onChanged: (v) => onNulosChanged(int.tryParse(v) ?? 0),
         ),
         const SizedBox(height: 8),
         _FilaVotos(
-          label:      'Votos blancos',
+          label: 'Votos blancos',
           controller: ctrlBlancos,
-          color:      _Tema.surfaceContainerLow,
-          textColor:  _Tema.primary,
-          onChanged:  (v) => onBlancosChanged(int.tryParse(v) ?? 0),
+          color: _T.surfaceContainerLow,
+          textColor: _T.primary,
+          enabled: editable,
+          onChanged: (v) => onBlancosChanged(int.tryParse(v) ?? 0),
         ),
-        Container(height: 1, color: _Tema.outline, margin: const EdgeInsets.symmetric(vertical: 8)),
+
+        Container(
+            height: 1,
+            color: _T.outline,
+            margin: const EdgeInsets.symmetric(vertical: 8)),
+
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('Total contabilizado',
-              style: TextStyle(fontSize: 12, color: _Tema.onSurfaceVariant)),
+              style: TextStyle(fontSize: 12, color: _T.onSurfaceVariant)),
           Text(
             '${state.totalContabilizado} / ${state.totalSufragantes}',
             style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600,
-              color: state.esConsistente ? _Tema.success : _Tema.errorColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: state.esConsistente ? _T.success : _T.errorColor,
             ),
           ),
         ]),
         const SizedBox(height: 6),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('Consistencia',
-              style: TextStyle(fontSize: 12, color: _Tema.onSurfaceVariant)),
+              style: TextStyle(fontSize: 12, color: _T.onSurfaceVariant)),
           _BadgeConsistencia(esConsistente: state.esConsistente),
         ]),
       ]),
@@ -487,10 +1075,14 @@ class _FilaVotos extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final Color color, textColor;
+  final bool enabled;
   final ValueChanged<String> onChanged;
   const _FilaVotos({
-    required this.label,      required this.controller,
-    required this.color,      required this.textColor,
+    required this.label,
+    required this.controller,
+    required this.color,
+    required this.textColor,
+    required this.enabled,
     required this.onChanged,
   });
 
@@ -501,35 +1093,43 @@ class _FilaVotos extends StatelessWidget {
         flex: 3,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(
+              color: color, borderRadius: BorderRadius.circular(8)),
           child: Text(label,
-              style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500),
-              maxLines: 2, overflow: TextOverflow.ellipsis),
+              style: TextStyle(
+                  fontSize: 12, color: textColor, fontWeight: FontWeight.w500),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
         ),
       ),
       const SizedBox(width: 8),
       Expanded(
         flex: 2,
         child: TextField(
-          controller:   controller,
+          controller: controller,
+          enabled: enabled,
           keyboardType: TextInputType.number,
-          textAlign:    TextAlign.right,
-          onChanged:    onChanged,
+          textAlign: TextAlign.right,
+          onChanged: onChanged,
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.outline)),
+                borderSide: const BorderSide(color: _T.outline)),
             enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.outline)),
+                borderSide: const BorderSide(color: _T.outline)),
+            disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _T.outline)),
             focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.primary, width: 1.5)),
-            filled:    true,
-            fillColor: Colors.white,
+                borderSide: const BorderSide(color: _T.primary, width: 1.5)),
+            filled: true,
+            fillColor: enabled ? Colors.white : _T.surfaceContainerLow,
           ),
         ),
       ),
@@ -546,14 +1146,15 @@ class _BadgeConsistencia extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: esConsistente ? _Tema.successContainer : _Tema.errorContainer,
+        color: esConsistente ? _T.successContainer : _T.errorContainer,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         esConsistente ? '✓ Consistente' : '✗ Inconsistente',
         style: TextStyle(
-          fontSize: 11, fontWeight: FontWeight.w600,
-          color: esConsistente ? _Tema.success : _Tema.errorColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: esConsistente ? _T.success : _T.errorColor,
         ),
       ),
     );
@@ -562,167 +1163,642 @@ class _BadgeConsistencia extends StatelessWidget {
 
 // ═════════════════════════════════════════════════════════════════════════════
 // TARJETA: FOTO
+// - BoxFit.contain (foto completa)
+// - Spinner mientras procesa
+// - Toque para agrandar con InteractiveViewer
 // ═════════════════════════════════════════════════════════════════════════════
 class _CardFoto extends StatelessWidget {
-  final dynamic fotoFile;
+  final File? fotoFile;
   final String? urlFotoExistente;
+  final bool procesandoFoto;
+  final bool editable;
   final VoidCallback onTomarFoto;
-  const _CardFoto({required this.fotoFile, required this.urlFotoExistente, required this.onTomarFoto});
+
+  const _CardFoto({
+    required this.fotoFile,
+    required this.urlFotoExistente,
+    required this.procesandoFoto,
+    required this.editable,
+    required this.onTomarFoto,
+  });
+
+  void _verFotoCompleta(BuildContext context, Widget imagen) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 5.0,
+              child: imagen,
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                    color: Colors.black54, shape: BoxShape.circle),
+                child: const Icon(Icons.close, color: Colors.white, size: 22),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tieneNuevaFoto    = fotoFile != null;
-    final tieneFotoExistente = urlFotoExistente != null && urlFotoExistente!.isNotEmpty;
+    final tieneNuevaFoto = fotoFile != null;
+    final tieneFotoExistente =
+        urlFotoExistente != null && urlFotoExistente!.isNotEmpty;
 
     return _Seccion(
       titulo: 'Fotografía del acta física',
-      icono:  Icons.camera_alt_outlined,
+      icono: Icons.camera_alt_outlined,
       child: Column(children: [
-        if (tieneNuevaFoto) ...[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.file(fotoFile, height: 200, fit: BoxFit.cover, width: double.infinity),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-                foregroundColor: _Tema.onSurfaceVariant,
-                side: const BorderSide(color: _Tema.outline),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            onPressed: onTomarFoto,
-            icon:  const Icon(Icons.refresh, size: 16),
-            label: const Text('Retomar foto'),
-          ),
-        ] else if (tieneFotoExistente) ...[
-          Stack(children: [
-            ClipRRect(
+        // Spinner mientras se procesa la foto
+        if (procesandoFoto)
+          Container(
+            height: 180,
+            decoration: BoxDecoration(
+              color: _T.surfaceContainerLow,
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                urlFotoExistente!,
-                height: 200, fit: BoxFit.cover, width: double.infinity,
-                loadingBuilder: (_, child, progress) => progress == null
-                    ? child
-                    : const SizedBox(height: 200,
-                        child: Center(child: CircularProgressIndicator(color: _Tema.primary))),
-                errorBuilder: (_, __, ___) => Container(
-                  height: 80,
-                  decoration: BoxDecoration(
-                      color: _Tema.surfaceContainerLow, borderRadius: BorderRadius.circular(8)),
-                  child: const Center(child: Icon(Icons.broken_image_outlined, color: _Tema.greyLight)),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: _T.primary),
+                  SizedBox(height: 10),
+                  Text('Procesando foto y capturando GPS...',
+                      style:
+                          TextStyle(fontSize: 12, color: _T.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          )
+
+        // Nueva foto tomada
+        else if (tieneNuevaFoto) ...[
+          GestureDetector(
+            onTap: () => _verFotoCompleta(
+              context,
+              Image.file(fotoFile!, fit: BoxFit.contain),
+            ),
+            child: Stack(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  fotoFile!,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: 220,
                 ),
               ),
-            ),
-            Positioned(top: 8, right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
-                child: const Text('Foto actual', style: TextStyle(color: Colors.white, fontSize: 11)),
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4)),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.zoom_in, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text('Toca para ampliar',
+                        style: TextStyle(color: Colors.white, fontSize: 11)),
+                  ]),
+                ),
               ),
-            ),
-          ]),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-                foregroundColor: _Tema.warningColor,
-                side: const BorderSide(color: _Tema.warningColor),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            onPressed: onTomarFoto,
-            icon:  const Icon(Icons.camera_alt_outlined, size: 16),
-            label: const Text('Reemplazar foto'),
+            ]),
           ),
-        ] else ...[
+          if (editable) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _T.onSurfaceVariant,
+                side: const BorderSide(color: _T.outline),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: onTomarFoto,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Retomar foto'),
+            ),
+          ],
+        ]
+
+        // Foto existente (edición)
+        else if (tieneFotoExistente) ...[
+          GestureDetector(
+            onTap: () => _verFotoCompleta(
+              context,
+              Image.network(urlFotoExistente!, fit: BoxFit.contain),
+            ),
+            child: Stack(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  urlFotoExistente!,
+                  height: 220,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  loadingBuilder: (_, child, progress) => progress == null
+                      ? child
+                      : const SizedBox(
+                          height: 220,
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: _T.primary))),
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                        color: _T.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined,
+                            color: _T.greyLight)),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4)),
+                  child: const Text('Foto actual',
+                      style: TextStyle(color: Colors.white, fontSize: 11)),
+                ),
+              ),
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(4)),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.zoom_in, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text('Toca para ampliar',
+                        style: TextStyle(color: Colors.white, fontSize: 11)),
+                  ]),
+                ),
+              ),
+            ]),
+          ),
+          if (editable) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _T.warningColor,
+                side: const BorderSide(color: _T.warningColor),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: onTomarFoto,
+              icon: const Icon(Icons.camera_alt_outlined, size: 16),
+              label: const Text('Reemplazar foto'),
+            ),
+          ],
+        ]
+
+        // Sin foto
+        else if (editable)
           GestureDetector(
             onTap: onTomarFoto,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 28),
               decoration: BoxDecoration(
-                border: Border.all(color: _Tema.outline, width: 1.5),
+                border: Border.all(color: _T.outline, width: 1.5),
                 borderRadius: BorderRadius.circular(8),
-                color: _Tema.surfaceContainerLow,
+                color: _T.surfaceContainerLow,
               ),
               child: const Column(children: [
-                Icon(Icons.add_a_photo_outlined, size: 36, color: _Tema.primary),
+                Icon(Icons.add_a_photo_outlined, size: 36, color: _T.primary),
                 SizedBox(height: 8),
                 Text('Tomar foto del acta',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _Tema.primary)),
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _T.primary)),
                 SizedBox(height: 4),
-                Text('Se usará la cámara trasera del dispositivo',
-                    style: TextStyle(fontSize: 11, color: _Tema.greyLight)),
+                Text(
+                    'La ubicación GPS se captura automáticamente al fotografiar',
+                    style: TextStyle(fontSize: 11, color: _T.greyLight),
+                    textAlign: TextAlign.center),
               ]),
             ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: const Text('Sin fotografía',
+                style: TextStyle(fontSize: 12, color: _T.greyLight)),
           ),
-        ],
       ]),
     );
   }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: GPS
+// TARJETA: GPS — coordenadas + mapa OSM con marcador
 // ═════════════════════════════════════════════════════════════════════════════
 class _CardGps extends StatelessWidget {
   final double? lat, lng;
   final bool cargando;
-  final VoidCallback onObtener;
-  const _CardGps({required this.lat, required this.lng, required this.cargando, required this.onObtener});
+  const _CardGps(
+      {required this.lat, required this.lng, required this.cargando});
 
   @override
   Widget build(BuildContext context) {
     final tieneGps = lat != null && lng != null;
+
     return _Seccion(
       titulo: 'Ubicación GPS',
-      icono:  Icons.gps_fixed,
+      icono: Icons.gps_fixed,
       child: Column(children: [
+        // Estado chip
         Container(
           padding: const EdgeInsets.all(10),
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: tieneGps ? _Tema.successContainer : _Tema.warningContainer,
+            color: cargando
+                ? _T.surfaceContainerLow
+                : tieneGps
+                    ? _T.successContainer
+                    : _T.warningContainer,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(children: [
-            Icon(
-              tieneGps ? Icons.verified_user_outlined : Icons.location_off_outlined,
-              size: 16,
-              color: tieneGps ? _Tema.success : _Tema.warningColor,
-            ),
+            if (cargando)
+              const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: _T.primary))
+            else
+              Icon(
+                tieneGps
+                    ? Icons.verified_user_outlined
+                    : Icons.location_off_outlined,
+                size: 16,
+                color: tieneGps ? _T.success : _T.warningColor,
+              ),
             const SizedBox(width: 8),
-            Text(
-              tieneGps
-                  ? 'Ubicación validada (${lat!.toStringAsFixed(4)}, ${lng!.toStringAsFixed(4)})'
-                  : 'Coordenadas GPS no capturadas',
-              style: TextStyle(
-                  fontSize: 12, color: tieneGps ? _Tema.success : _Tema.warningColor),
+            Expanded(
+              child: Text(
+                cargando
+                    ? 'Capturando coordenadas...'
+                    : tieneGps
+                        ? 'Ubicación capturada correctamente'
+                        : 'Las coordenadas se capturan al tomar la foto',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: cargando
+                      ? _T.onSurfaceVariant
+                      : tieneGps
+                          ? _T.success
+                          : _T.warningColor,
+                ),
+              ),
             ),
           ]),
         ),
+
+        // Coordenadas en texto
         Row(children: [
-          Expanded(child: _Campo(label: 'Latitud',  valor: lat != null ? lat!.toStringAsFixed(6) : '—', disabled: true)),
+          Expanded(
+              child: _Campo(
+                  label: 'Latitud',
+                  valor: lat != null ? lat!.toStringAsFixed(6) : '—',
+                  disabled: true)),
           const SizedBox(width: 10),
-          Expanded(child: _Campo(label: 'Longitud', valor: lng != null ? lng!.toStringAsFixed(6) : '—', disabled: true)),
+          Expanded(
+              child: _Campo(
+                  label: 'Longitud',
+                  valor: lng != null ? lng!.toStringAsFixed(6) : '—',
+                  disabled: true)),
         ]),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: _Tema.primary,
-            minimumSize: const Size.fromHeight(44),
-            side: const BorderSide(color: _Tema.outline),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+
+        // Mapa OSM con marcador (solo cuando hay GPS)
+        if (tieneGps) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 200,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(lat!, lng!),
+                  initialZoom: 15.0,
+                  // Mapa estático (sin gestos)
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.none,
+                  ),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.tuapp.veedor',
+                  ),
+                  MarkerLayer(markers: [
+                    Marker(
+                      point: LatLng(lat!, lng!),
+                      width: 44,
+                      height: 44,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 44,
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
           ),
-          onPressed: cargando ? null : onObtener,
-          icon: cargando
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.my_location, size: 16),
-          label: Text(cargando ? 'Obteniendo GPS...' : 'Actualizar ubicación'),
-        ),
-        const SizedBox(height: 6),
+        ],
+
+        const SizedBox(height: 8),
         const Row(children: [
-          Icon(Icons.info_outline, size: 12, color: _Tema.greyLight),
+          Icon(Icons.info_outline, size: 12, color: _T.greyLight),
           SizedBox(width: 4),
-          Text('Se captura automáticamente al abrir el formulario',
-              style: TextStyle(fontSize: 11, color: _Tema.greyLight)),
+          Expanded(
+            child: Text(
+              'Las coordenadas se capturan automáticamente al fotografiar el acta y se almacenan como campo del registro.',
+              style: TextStyle(fontSize: 11, color: _T.greyLight),
+            ),
+          ),
         ]),
+      ]),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DIALOG: VISTA PREVIA POST-GUARDADO
+// El usuario cierra este diálogo y queda en ActaFormScreen
+// donde puede pulsar "Actualizar acta" libremente.
+// ═════════════════════════════════════════════════════════════════════════════
+class _DialogVistaPrevia extends StatelessWidget {
+  final ActaFormState state;
+  final List<OrganizacionPolitica> organizaciones;
+  final String mesaNombre, recintoNombre, dignidad;
+  final bool pendienteSync;
+  final VoidCallback onCerrar;
+
+  const _DialogVistaPrevia({
+    required this.state,
+    required this.organizaciones,
+    required this.mesaNombre,
+    required this.recintoNombre,
+    required this.dignidad,
+    required this.pendienteSync,
+    required this.onCerrar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cabecera
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      pendienteSync ? _T.warningContainer : _T.successContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  pendienteSync ? Icons.cloud_off : Icons.check_circle_outline,
+                  color: pendienteSync ? _T.warningColor : _T.success,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pendienteSync
+                            ? 'Vista previa — pendiente de sync'
+                            : 'Vista previa del acta registrada',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: pendienteSync ? _T.warningColor : _T.success,
+                        ),
+                      ),
+                      if (pendienteSync)
+                        const Text('Se enviará cuando haya conexión a internet',
+                            style:
+                                TextStyle(fontSize: 11, color: _T.greyLight)),
+                    ]),
+              ),
+            ]),
+
+            const SizedBox(height: 16),
+            const Divider(color: _T.outline),
+            const SizedBox(height: 12),
+
+            _filaPrevia('Recinto', recintoNombre),
+            _filaPrevia('Mesa / JRV', mesaNombre),
+            _filaPrevia('Dignidad', dignidad),
+            _filaPrevia('Total sufragantes', state.totalSufragantes.toString()),
+
+            const SizedBox(height: 8),
+            const Text('Votos por organización:',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _T.onSurfaceVariant)),
+            const SizedBox(height: 4),
+
+            ...organizaciones.map((org) {
+              final votos = state.votosPorOrganizacion[org.id] ?? 0;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                          child: Text('${org.listaNumero}. ${org.nombre}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: _T.onSurface),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      Text(votos.toString(),
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _T.primary)),
+                    ]),
+              );
+            }),
+
+            const SizedBox(height: 6),
+            _filaPrevia('Votos nulos', state.votosNulos.toString()),
+            _filaPrevia('Votos blancos', state.votosBlancos.toString()),
+            _filaPrevia(
+              'Total contabilizado',
+              '${state.totalContabilizado} / ${state.totalSufragantes}',
+              valueColor: state.esConsistente ? _T.success : _T.errorColor,
+            ),
+
+            if (state.gpsLat != null) ...[
+              const SizedBox(height: 4),
+              _filaPrevia(
+                'GPS',
+                '${state.gpsLat!.toStringAsFixed(5)}, ${state.gpsLng!.toStringAsFixed(5)}',
+              ),
+              // Mini mapa en la vista previa
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 130,
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: LatLng(state.gpsLat!, state.gpsLng!),
+                      initialZoom: 15.0,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.none,
+                      ),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.tuapp.veedor',
+                      ),
+                      MarkerLayer(markers: [
+                        Marker(
+                          point: LatLng(state.gpsLat!, state.gpsLng!),
+                          width: 36,
+                          height: 36,
+                          child: const Icon(Icons.location_pin,
+                              color: Colors.red, size: 36),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            if (state.fotoFile != null) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (_) => Dialog(
+                    backgroundColor: Colors.black,
+                    insetPadding: EdgeInsets.zero,
+                    child: InteractiveViewer(
+                      child: Image.file(state.fotoFile!, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(children: [
+                    Image.file(
+                      state.fotoFile!,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4)),
+                        child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.zoom_in,
+                                  color: Colors.white, size: 11),
+                              SizedBox(width: 3),
+                              Text('Ampliar',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10)),
+                            ]),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: _T.primary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                // Solo cierra el diálogo, NO navega hacia atrás
+                // El usuario queda en ActaFormScreen y puede actualizar
+                onPressed: onCerrar,
+                child: const Text('Cerrar vista previa',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filaPrevia(String label, String valor, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: _T.onSurfaceVariant)),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(valor,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? _T.onSurface)),
+        ),
       ]),
     );
   }
@@ -731,36 +1807,60 @@ class _CardGps extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════════════════════
 // WIDGETS AUXILIARES
 // ═════════════════════════════════════════════════════════════════════════════
+class _Pill extends StatelessWidget {
+  final String label;
+  final Color color, bg;
+  const _Pill({required this.label, required this.color, required this.bg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+    );
+  }
+}
+
 class _Seccion extends StatelessWidget {
   final String titulo;
   final IconData icono;
   final Widget child;
-  const _Seccion({required this.titulo, required this.icono, required this.child});
+  const _Seccion(
+      {required this.titulo, required this.icono, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(_Tema.cardRadius),
-        border: Border.all(color: _Tema.outline),
+        borderRadius: BorderRadius.circular(_T.cardRadius),
+        border: Border.all(color: _T.outline),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const BoxDecoration(
-            color: _Tema.surfaceContainerLow,
+            color: _T.surfaceContainerLow,
             borderRadius: BorderRadius.only(
-              topLeft:  Radius.circular(_Tema.cardRadius),
-              topRight: Radius.circular(_Tema.cardRadius),
+              topLeft: Radius.circular(_T.cardRadius),
+              topRight: Radius.circular(_T.cardRadius),
             ),
           ),
           child: Row(children: [
-            Icon(icono, size: 16, color: _Tema.primary),
+            Icon(icono, size: 16, color: _T.primary),
             const SizedBox(width: 8),
             Text(titulo,
                 style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: _Tema.primary)),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _T.primary)),
           ]),
         ),
         Padding(padding: const EdgeInsets.all(14), child: child),
@@ -772,27 +1872,30 @@ class _Seccion extends StatelessWidget {
 class _Campo extends StatelessWidget {
   final String label, valor;
   final bool disabled;
-  const _Campo({required this.label, required this.valor, this.disabled = false});
+  const _Campo(
+      {required this.label, required this.valor, this.disabled = false});
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label,
           style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: _Tema.onSurfaceVariant)),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _T.onSurfaceVariant)),
       const SizedBox(height: 4),
       Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: disabled ? _Tema.surfaceContainerLow : Colors.white,
+          color: disabled ? _T.surfaceContainerLow : Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _Tema.outline),
+          border: Border.all(color: _T.outline),
         ),
         child: Text(valor,
             style: TextStyle(
                 fontSize: 13,
-                color: disabled ? _Tema.onSurfaceVariant : _Tema.onSurface)),
+                color: disabled ? _T.onSurfaceVariant : _T.onSurface)),
       ),
     ]);
   }
@@ -811,13 +1914,17 @@ class _CameraCapturePage extends StatefulWidget {
 
 class _CameraCapturePageState extends State<_CameraCapturePage> {
   late CameraController _controller;
-  late Future<void>     _initFuture;
+  late Future<void> _initFuture;
   bool _capturando = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = CameraController(widget.camera, ResolutionPreset.high, enableAudio: false);
+    _controller = CameraController(
+      widget.camera,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
     _initFuture = _controller.initialize();
   }
 
@@ -855,34 +1962,72 @@ class _CameraCapturePageState extends State<_CameraCapturePage> {
         future: _initFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.white));
           }
           if (snapshot.hasError) {
             return Center(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white54),
-                const SizedBox(height: 12),
-                Text('Error al iniciar la cámara:\n${snapshot.error}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              ]),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.camera_alt_outlined,
+                        size: 48, color: Colors.white54),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Error al iniciar la cámara:\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ]),
             );
           }
           return Stack(children: [
             Center(child: CameraPreview(_controller)),
+
+            // Aviso GPS al usuario
             Positioned(
-              bottom: 32, left: 0, right: 0,
+              top: 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.gps_fixed, size: 14, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('GPS se captura al fotografiar',
+                        style: TextStyle(color: Colors.white, fontSize: 12)),
+                  ]),
+                ),
+              ),
+            ),
+
+            // Botón de captura
+            Positioned(
+              bottom: 32,
+              left: 0,
+              right: 0,
               child: Center(
                 child: GestureDetector(
                   onTap: _capturar,
                   child: Container(
-                    width: 70, height: 70,
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
-                      color: _capturando ? Colors.grey : Colors.white.withOpacity(0.85),
+                      color: _capturando
+                          ? Colors.grey
+                          : Colors.white.withOpacity(0.85),
                     ),
-                    child: const Icon(Icons.camera_alt, size: 36, color: Colors.black),
+                    child: const Icon(Icons.camera_alt,
+                        size: 36, color: Colors.black),
                   ),
                 ),
               ),

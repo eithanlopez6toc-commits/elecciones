@@ -1,19 +1,20 @@
-// data/models/organizacion_politica_model.dart
+// lib/features/auth/data/models/organizacion_politica_model.dart
 import '../../domain/entities/organizacion_politica.dart';
 
-class OrganizacionPoliticaModel {
-  static Map<String, dynamic> toMap(OrganizacionPolitica org) {
-    return {
-      'nombre': org.nombre,
-      'lista_numero': org.listaNumero,
-    };
-  }
+class OrganizacionPoliticaModel extends OrganizacionPolitica {
+  const OrganizacionPoliticaModel({
+    required super.id,
+    required super.nombre,
+    required super.listaNumero,
+    super.candidatoNombre,
+  });
 
-  static OrganizacionPolitica fromMap(Map<String, dynamic> data) {
-    return OrganizacionPolitica(
-      id: data['id'] as int,
-      nombre: data['nombre'] as String,
-      listaNumero: data['lista_numero'] as String,
+  factory OrganizacionPoliticaModel.fromMap(Map<String, dynamic> map) {
+    return OrganizacionPoliticaModel(
+      id: map['id'] as int,
+      nombre: map['nombre'] as String,
+      listaNumero: map['lista_numero']?.toString() ?? '',
+      candidatoNombre: map['candidato_nombre'] as String?,
     );
   }
 }
