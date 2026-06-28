@@ -221,7 +221,7 @@ final crearCoordinadorRecintoProvider = Provider<
 
     final response = await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
-      'nombres': nombre,
+      'nombre': nombre,
       'apellido': apellido,
       'telefono': telefono,
       'correo': correo,

@@ -10,24 +10,29 @@ import 'veedor_providers.dart';
 import 'acta_form_screen.dart';
 
 // ═════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM — Democracy Core
+// DESIGN SYSTEM — Portal Electoral Seguro (unificado con coordinador)
 // ═════════════════════════════════════════════════════════════════════════════
 class _Tema {
   static const primary = Color(0xFF003EC7);
   static const outline = Color(0xFFE2E8F0);
-  static const cardRadius = 8.0;
-  static const background = Color(0xFFFAF8FF);
-  static const surfaceContainerLow = Color(0xFFF2F3FF);
-  static const onSurfaceVariant = Color(0xFF434656);
-  static const greyLight = Color(0xFFC3C5D9);
-  static const success = Color(0xFF006C49);
-  static const successContainer = Color(0xFFE8F5E9);
-  static const errorColor = Color(0xFFBA1A1A);
-  static const errorContainer = Color(0xFFFFDAD6);
-  static const warningColor = Color(0xFF9C6B00);
-  static const warningContainer = Color(0xFFFFF3E0);
+  static const cardRadius = 12.0;
+  static const background = Color(0xFFF7F8FA);
+  static const onSurface = Color(0xFF0F172A);
+  static const onSurfaceVariant = Color(0xFF475569);
+  static const greyLight = Color(0xFF94A3B8);
+  static const success = Color(0xFF10B981);
+  static const successContainer = Color(0xFFECFDF5);
+  static const errorColor = Color(0xFFEF4444);
+  static const errorContainer = Color(0xFFFEF2F2);
+  static const warningColor = Color(0xFFF59E0B);
+  static const warningContainer = Color(0xFFFFFBEB);
+  static const brandAccent = Color(0xFFEFF6FF);
+  static const surfaceContainerLow = Color(0xFFEFF6FF);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ═════════════════════════════════════════════════════════════════════════════
 class VeedorPanelScreen extends ConsumerWidget {
   const VeedorPanelScreen({super.key});
 
@@ -43,25 +48,42 @@ class VeedorPanelScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _Tema.background,
       appBar: AppBar(
-        backgroundColor: _Tema.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: _Tema.primary,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: _Tema.outline, height: 1.0),
+        ),
+        title: Row(
           children: [
-            const Text(
-              'Panel del Veedor',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            Text(
-              '${usuario.nombres} ${usuario.apellidos}',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            const Icon(Icons.shield_outlined, color: _Tema.primary, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Portal Electoral Seguro',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _Tema.primary),
+                  ),
+                  Text(
+                    'Veedor: ${usuario.nombres} ${usuario.apellidos}',
+                    style: const TextStyle(
+                        fontSize: 11, color: _Tema.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_outlined, size: 20),
+            icon: const Icon(Icons.logout_outlined,
+                size: 20, color: _Tema.onSurfaceVariant),
             tooltip: 'Cerrar sesión',
             onPressed: () async {
               await ref.read(loginControllerProvider.notifier).logout();
@@ -73,32 +95,32 @@ class VeedorPanelScreen extends ConsumerWidget {
         ],
       ),
       body: mesasAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: _Tema.primary),
-        ),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: _Tema.primary)),
         error: (e, _) => _ErrorView(
           mensaje: e.toString(),
           onRetry: () => ref.invalidate(mesasVeedorProvider(usuario.id)),
         ),
         data: (mesas) {
-          if (mesas.isEmpty) {
-            return const _SinMesasView();
-          }
+          if (mesas.isEmpty) return const _SinMesasView();
           return RefreshIndicator(
             color: _Tema.primary,
             onRefresh: () async =>
                 ref.invalidate(mesasVeedorProvider(usuario.id)),
             child: ListView(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               children: [
                 _ResumenBanner(mesas: mesas, usuarioId: usuario.id),
-                const SizedBox(height: 12),
-                ...mesas.map(
-                  (mesa) => _TarjetaMesa(
-                    mesa: mesa,
-                    usuario: usuario,
-                  ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Mesas asignadas',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _Tema.onSurfaceVariant),
                 ),
+                const SizedBox(height: 8),
+                ...mesas.map((mesa) => _TarjetaMesa(mesa: mesa, usuario: usuario)),
                 const SizedBox(height: 20),
               ],
             ),
@@ -110,7 +132,7 @@ class VeedorPanelScreen extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────
-// Banner de resumen
+// Banner de resumen (KPI cards — mismo estilo que coordinador)
 // ─────────────────────────────────────────
 class _ResumenBanner extends ConsumerWidget {
   final List<MesaJrv> mesas;
@@ -122,109 +144,130 @@ class _ResumenBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actasAsync = ref.watch(actasVeedorProvider(usuarioId));
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_Tema.primary, _Tema.primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
+    return actasAsync.when(
+      loading: () => const SizedBox(
+        height: 80,
+        child: Center(
+            child: CircularProgressIndicator(color: _Tema.primary, strokeWidth: 2)),
       ),
-      child: actasAsync.when(
-        loading: () => const SizedBox(
-          height: 48,
-          child: Center(
-            child:
-                CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-          ),
-        ),
-        error: (_, __) => const SizedBox.shrink(),
-        data: (actas) {
-          final totalEsperadas = mesas.length * 2; // alcalde + prefecto
-          final registradas = actas.length;
-          final pendientes = totalEsperadas - registradas;
+      error: (_, __) => const SizedBox.shrink(),
+      data: (actas) {
+        final totalEsperadas = mesas.length * 2;
+        final registradas = actas.length;
+        final pendientes = totalEsperadas - registradas;
+        final progreso = totalEsperadas == 0
+            ? 0.0
+            : (registradas / totalEsperadas).clamp(0.0, 1.0);
 
-          return Row(
-            children: [
-              Expanded(
-                child: _StatItem(
-                  valor: '${mesas.length}',
-                  etiqueta: 'Mesas asignadas',
-                  icono: Icons.how_to_vote_outlined,
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _CardKPI(
+                    label: 'MESAS ASIGNADAS',
+                    value: '${mesas.length}',
+                    icon: Icons.how_to_vote_outlined,
+                  ),
                 ),
-              ),
-              _Divisor(),
-              Expanded(
-                child: _StatItem(
-                  valor: '$registradas',
-                  etiqueta: 'Actas registradas',
-                  icono: Icons.check_circle_outline,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _CardKPI(
+                    label: 'ACTAS REGISTRADAS',
+                    value: '$registradas',
+                    icon: Icons.check_circle_outline,
+                  ),
                 ),
-              ),
-              _Divisor(),
-              Expanded(
-                child: _StatItem(
-                  valor: '$pendientes',
-                  etiqueta: 'Pendientes',
-                  icono: Icons.pending_outlined,
-                  destacar: pendientes > 0,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _CardKPI(
+                    label: 'PENDIENTES',
+                    value: '$pendientes',
+                    icon: Icons.pending_outlined,
+                    destacar: pendientes > 0,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _CardKPI(
+              label: 'PROGRESO DE ACTAS',
+              value: '${(progreso * 100).toStringAsFixed(1)}%',
+              icon: Icons.analytics_outlined,
+              progress: progreso,
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String valor;
-  final String etiqueta;
-  final IconData icono;
+class _CardKPI extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final double? progress;
   final bool destacar;
 
-  const _StatItem({
-    required this.valor,
-    required this.etiqueta,
-    required this.icono,
+  const _CardKPI({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.progress,
     this.destacar = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icono, color: Colors.white70, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          valor,
-          style: TextStyle(
-            color: destacar ? const Color(0xFFFFCC02) : Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+          border: Border.all(color: _Tema.outline)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: _Tema.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _Tema.greyLight,
+                      letterSpacing: 0.5),
+                ),
+              ),
+            ],
           ),
-        ),
-        Text(
-          etiqueta,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: destacar ? _Tema.warningColor : _Tema.onSurface),
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: _Tema.background,
+                  color: _Tema.primary),
+            ),
+          ],
+        ],
+      ),
     );
   }
-}
-
-class _Divisor extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 40,
-        color: Colors.white24,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-      );
 }
 
 // ─────────────────────────────────────────
@@ -241,27 +284,28 @@ class _TarjetaMesa extends ConsumerWidget {
     final actasAsync = ref.watch(actasPorMesaProvider(mesa.id));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(_Tema.cardRadius),
-        border: Border.all(color: _Tema.outline, width: 1),
+        border: Border.all(color: _Tema.outline),
       ),
       child: Column(
         children: [
-          // Encabezado de la mesa
+          // Encabezado de la mesa — mismo estilo que tarjeta recinto
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: const BoxDecoration(
               color: _Tema.surfaceContainerLow,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8.0),
-                topRight: Radius.circular(8.0),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(_Tema.cardRadius),
+                topRight: Radius.circular(_Tema.cardRadius),
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.table_restaurant_outlined,
+                const Icon(Icons.how_to_vote_outlined,
                     size: 16, color: _Tema.primary),
                 const SizedBox(width: 8),
                 Expanded(
@@ -282,14 +326,13 @@ class _TarjetaMesa extends ConsumerWidget {
           actasAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(12),
               child: Text('Error: $e',
-                  style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  style: const TextStyle(
+                      color: _Tema.errorColor, fontSize: 12)),
             ),
             data: (actas) {
               final actaAlcalde = actas
@@ -307,25 +350,16 @@ class _TarjetaMesa extends ConsumerWidget {
                     icono: Icons.location_city_outlined,
                     acta: actaAlcalde,
                     onTap: () => _navegarAFormulario(
-                      context,
-                      ref,
-                      Dignidad.alcalde,
-                      actaAlcalde,
-                    ),
+                        context, ref, Dignidad.alcalde, actaAlcalde),
                   ),
-                  Divider(
-                      height: 1, thickness: 0.5, color: Colors.grey.shade200),
+                  Container(height: 1, color: _Tema.outline),
                   _FilaActa(
                     dignidad: Dignidad.prefecto,
                     etiqueta: 'Acta de Prefecto',
                     icono: Icons.account_balance_outlined,
                     acta: actaPrefecto,
                     onTap: () => _navegarAFormulario(
-                      context,
-                      ref,
-                      Dignidad.prefecto,
-                      actaPrefecto,
-                    ),
+                        context, ref, Dignidad.prefecto, actaPrefecto),
                   ),
                 ],
               );
@@ -342,8 +376,8 @@ class _TarjetaMesa extends ConsumerWidget {
     Dignidad dignidad,
     Acta? actaExistente,
   ) async {
-    // Cargar organizaciones políticas para esa dignidad
-    final orgsAsync = ref.read(organizacionesPorDignidadProvider(dignidad));
+    final orgsAsync =
+        ref.read(organizacionesPorDignidadProvider(dignidad));
     final List<OrganizacionPolitica> orgs = orgsAsync.maybeWhen(
       data: (data) => data,
       orElse: () => [],
@@ -362,11 +396,12 @@ class _TarjetaMesa extends ConsumerWidget {
           organizaciones: orgs,
           userId: usuario.id,
           actaExistente: actaExistente,
+          // El veedor puede crear Y editar
+          soloLectura: false,
         ),
       ),
     );
 
-    // Refrescar actas de esta mesa al volver
     ref.invalidate(actasPorMesaProvider(mesa.id));
     ref.invalidate(actasVeedorProvider(usuario.id));
   }
@@ -397,8 +432,8 @@ class _FilaActa extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(8.0),
-        bottomRight: Radius.circular(8.0),
+        bottomLeft: Radius.circular(_Tema.cardRadius),
+        bottomRight: Radius.circular(_Tema.cardRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -426,9 +461,9 @@ class _FilaActa extends StatelessWidget {
                   Text(
                     etiqueta,
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _Tema.onSurface),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -436,9 +471,8 @@ class _FilaActa extends StatelessWidget {
                         ? 'Registrada — toca para editar'
                         : 'Pendiente — toca para registrar',
                     style: TextStyle(
-                      fontSize: 11,
-                      color: registrada ? _Tema.success : _Tema.greyLight,
-                    ),
+                        fontSize: 11,
+                        color: registrada ? _Tema.success : _Tema.greyLight),
                   ),
                 ],
               ),
@@ -464,58 +498,29 @@ class _BadgeEstado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (acta == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: _Tema.warningContainer,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: _Tema.warningColor.withOpacity(0.3)),
-        ),
-        child: Text(
-          'Pendiente',
-          style: TextStyle(
-              fontSize: 10,
-              color: _Tema.warningColor,
-              fontWeight: FontWeight.w500),
-        ),
-      );
+      return _pill('Pendiente', _Tema.warningColor, _Tema.warningContainer);
     }
-
-    final (color, bg, borde, label) = switch (acta!.estado) {
-      EstadoActa.ingresada => (
-          _Tema.primary,
-          _Tema.surfaceContainerLow,
-          _Tema.outline,
-          'Ingresada'
-        ),
-      EstadoActa.revisada => (
-          _Tema.success,
-          _Tema.successContainer,
-          _Tema.success.withOpacity(0.3),
-          'Revisada'
-        ),
-      EstadoActa.conNovedad => (
-          _Tema.errorColor,
-          _Tema.errorContainer,
-          _Tema.errorColor.withOpacity(0.3),
-          'Con novedad'
-        ),
+    return switch (acta!.estado) {
+      EstadoActa.ingresada =>
+        _pill('Ingresada', _Tema.primary, _Tema.brandAccent),
+      EstadoActa.revisada =>
+        _pill('Revisada', _Tema.success, _Tema.successContainer),
+      EstadoActa.conNovedad =>
+        _pill('Con novedad', _Tema.errorColor, _Tema.errorContainer),
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: borde),
-      ),
-      child: Text(
-        label,
-        style:
-            TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500),
-      ),
-    );
   }
+
+  Widget _pill(String label, Color color, Color bg) => Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+            color: bg, borderRadius: BorderRadius.circular(4)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                color: color,
+                fontWeight: FontWeight.bold)),
+      );
 }
 
 // ─────────────────────────────────────────
@@ -532,9 +537,9 @@ class _SinMesasView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: _Tema.greyLight),
+            const Icon(Icons.inbox_outlined, size: 64, color: _Tema.greyLight),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Sin mesas asignadas',
               style: TextStyle(
                   fontSize: 16,
@@ -542,7 +547,7 @@ class _SinMesasView extends StatelessWidget {
                   color: _Tema.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Contacta al coordinador de recinto para que te asigne una mesa.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: _Tema.greyLight),
@@ -571,7 +576,7 @@ class _ErrorView extends StatelessWidget {
             Icon(Icons.wifi_off_outlined,
                 size: 48, color: _Tema.errorColor.withOpacity(0.5)),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error al cargar mesas',
               style: TextStyle(
                   fontSize: 15,
@@ -582,14 +587,15 @@ class _ErrorView extends StatelessWidget {
             Text(
               mensaje,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: _Tema.greyLight),
+              style: const TextStyle(fontSize: 12, color: _Tema.greyLight),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 16),
               label: const Text('Reintentar'),
-              style: FilledButton.styleFrom(backgroundColor: _Tema.primary),
+              style:
+                  FilledButton.styleFrom(backgroundColor: _Tema.primary),
             ),
           ],
         ),

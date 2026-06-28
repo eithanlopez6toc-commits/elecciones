@@ -36,11 +36,10 @@ final actasDeMesaProvider =
       .toList();
 });
 
-// ─── Veedores del recinto (para mostrar asignaciones) ────────────────────────
+// ─── Veedores del recinto ─────────────────────────────────────────────────────
 final veedoresDeRecintoProvider =
     FutureProvider.family<List<Usuario>, int>((ref, recintoId) async {
   final supabase = ref.watch(supabaseClientProvider);
-  // Trae usuarios con rol veedor que tienen mesas asignadas en este recinto
   final res = await supabase.from('veedor_mesas').select('''
         usuario_id,
         mesa_id,
@@ -125,21 +124,49 @@ final crearMesaProvider = Provider<
 });
 
 // ─── Crear cuenta de veedor ───────────────────────────────────────────────────
-// Llama a una Edge Function de Supabase para crear el usuario en auth + perfil
+// FIX: 'nombre' singular (no 'nombres'), y se valida response.status
 final crearVeedorProvider = Provider<
-    Future<void> Function(String cedula, String nombres, String apellido,
+    Future<void> Function(String cedula, String nombre, String apellido,
         String telefono, String correo, int mesaId)>((ref) {
-  return (cedula, nombres, apellido, telefono, correo, mesaId) async {
+  return (cedula, nombre, apellido, telefono, correo, mesaId) async {
     final supabase = ref.read(supabaseClientProvider);
-    await supabase.functions.invoke('crear-usuario', body: {
+    final response = await supabase.functions.invoke('crear-usuario', body: {
       'cedula': cedula,
-      'nombres': nombres,
+      'nombre': nombre, // ← FIX: singular, coincide con Edge Function
       'apellido': apellido,
       'telefono': telefono,
       'correo': correo,
       'rol': 'veedor',
       'mesa_id': mesaId,
     });
+
+    if (response.status != 200) {
+      final mensaje = response.data?['error'] ??
+          response.data?['message'] ??
+          'Error desconocido (status ${response.status})';
+      throw Exception(mensaje);
+    }
+  };
+});
+
+// ─── Editar/corregir acta (sin restricción para coordinador) ─────────────────
+// Actualiza votos, foto y estado. El coordinador puede corregir cualquier campo.
+final editarActaProvider = Provider<
+    Future<void> Function({
+      required int actaId,
+      required Map<String, dynamic> campos,
+    })>((ref) {
+  return ({required actaId, required campos}) async {
+    final supabase = ref.read(supabaseClientProvider);
+    final updates = {
+      ...campos,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    final error = await supabase
+        .from(SupabaseConstants.actasTable)
+        .update(updates)
+        .eq('id', actaId);
+    if (error != null) throw Exception(error.toString());
   };
 });
 
@@ -148,7 +175,6 @@ final reasignarVeedorProvider =
     Provider<Future<void> Function(String usuarioId, int mesaId)>((ref) {
   return (usuarioId, mesaId) async {
     final supabase = ref.read(supabaseClientProvider);
-    // Elimina asignación anterior y crea la nueva
     await supabase.from('veedor_mesas').delete().eq('usuario_id', usuarioId);
     await supabase.from('veedor_mesas').insert({
       'usuario_id': usuarioId,
