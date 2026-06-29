@@ -87,8 +87,8 @@ void _mostrarExitoDialog(BuildContext context, String mensaje,
             Navigator.pop(ctx);
             onClose?.call();
           },
-          child:
-              const Text('Continuar', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('Continuar',
+              style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -129,8 +129,8 @@ void _mostrarErrorDialog(BuildContext context, String mensaje) {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8))),
           onPressed: () => Navigator.pop(ctx),
-          child:
-              const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text('Entendido',
+              style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -191,8 +191,7 @@ class _CoordinadorProvincialPanelScreenState
                       fontWeight: FontWeight.w700,
                       color: _Tema.primary)),
               if (usuario != null)
-                Text(
-                    'Coordinador: ${usuario.nombres} ${usuario.apellidos}',
+                Text('Coordinador: ${usuario.nombres} ${usuario.apellidos}',
                     style: const TextStyle(
                         fontSize: 11, color: _Tema.onSurfaceVariant)),
             ]),
@@ -203,6 +202,7 @@ class _CoordinadorProvincialPanelScreenState
             icon: const Icon(Icons.logout_outlined,
                 size: 20, color: _Tema.onSurfaceVariant),
             onPressed: () async {
+              // logout() ya no espera la red (ver fix en login_controller.dart)
               await ref.read(loginControllerProvider.notifier).logout();
               if (context.mounted) {
                 Navigator.of(context).pushReplacementNamed('/');
@@ -223,9 +223,15 @@ class _CoordinadorProvincialPanelScreenState
             labelStyle:
                 const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             tabs: const [
-              Tab(icon: Icon(Icons.location_city_outlined, size: 20), text: 'Inicio'),
-              Tab(icon: Icon(Icons.bar_chart_outlined, size: 20), text: 'Actas'),
-              Tab(icon: Icon(Icons.people_outline, size: 20), text: 'Coordinadores'),
+              Tab(
+                  icon: Icon(Icons.location_city_outlined, size: 20),
+                  text: 'Inicio'),
+              Tab(
+                  icon: Icon(Icons.bar_chart_outlined, size: 20),
+                  text: 'Actas'),
+              Tab(
+                  icon: Icon(Icons.people_outline, size: 20),
+                  text: 'Coordinadores'),
             ],
           ),
         ),
@@ -427,7 +433,8 @@ class _CoordinadorProvincialPanelScreenState
                 const Text(
                     'Complete los datos para registrar al nuevo coordinador.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
+                    style:
+                        TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
                 const SizedBox(height: 24),
                 Form(
                   key: formKey,
@@ -500,8 +507,7 @@ class _CoordinadorProvincialPanelScreenState
                               final recintosAsync2 =
                                   ref.watch(coordinadoresRecintoProvider);
                               return recintosAsync2.when(
-                                loading: () =>
-                                    const LinearProgressIndicator(),
+                                loading: () => const LinearProgressIndicator(),
                                 error: (e, _) => Text('Error: $e'),
                                 data: (coordinadores) {
                                   final recintosOcupados = coordinadores
@@ -559,8 +565,7 @@ class _CoordinadorProvincialPanelScreenState
                                 color: _Tema.brandAccent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                    color:
-                                        _Tema.primary.withOpacity(0.1))),
+                                    color: _Tema.primary.withOpacity(0.1))),
                             child: const Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -688,8 +693,8 @@ class _TabRecintos extends ConsumerWidget {
                   onPressed: onCrear,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Nuevo Recinto',
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.bold)),
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -1109,8 +1114,8 @@ class _FilaCandidatoModerno extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: _Tema.onSurface)),
                     Text(datos.organizacion,
-                        style:
-                            const TextStyle(fontSize: 11, color: _Tema.greyLight)),
+                        style: const TextStyle(
+                            fontSize: 11, color: _Tema.greyLight)),
                   ],
                 ),
               ),
@@ -1170,8 +1175,8 @@ class _SelectorRecinto extends StatelessWidget {
           items: [
             const DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Todos los recintos',
-                    style: TextStyle(fontSize: 13))),
+                child:
+                    Text('Todos los recintos', style: TextStyle(fontSize: 13))),
             ...recintos.map((r) => DropdownMenuItem<String?>(
                 value: r.nombre,
                 child: Text(r.nombre, style: const TextStyle(fontSize: 13)))),
@@ -1212,9 +1217,7 @@ class _SelectorDignidad extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isSel
-                            ? Colors.white
-                            : _Tema.onSurfaceVariant)),
+                        color: isSel ? Colors.white : _Tema.onSurfaceVariant)),
               ),
             ),
           );
@@ -1279,8 +1282,7 @@ class _TabCoordinadores extends ConsumerWidget {
                             ? Icons.verified_user_outlined
                             : Icons.person_outline,
                         size: 20,
-                        color:
-                            aceptado ? _Tema.success : _Tema.warningColor,
+                        color: aceptado ? _Tema.success : _Tema.warningColor,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1335,8 +1337,8 @@ class _TabCoordinadores extends ConsumerWidget {
                         icon: const Icon(Icons.delete_outline,
                             color: _Tema.errorColor, size: 20),
                         tooltip: 'Eliminar coordinador pendiente',
-                        onPressed: () => _confirmarEliminar(context, ref,
-                            c.id, '${c.nombres} ${c.apellidos}'),
+                        onPressed: () => _confirmarEliminar(
+                            context, ref, c.id, '${c.nombres} ${c.apellidos}'),
                       ),
                   ],
                 ),
@@ -1348,8 +1350,8 @@ class _TabCoordinadores extends ConsumerWidget {
     );
   }
 
-  void _confirmarEliminar(BuildContext context, WidgetRef ref, String userId,
-      String nombre) {
+  void _confirmarEliminar(
+      BuildContext context, WidgetRef ref, String userId, String nombre) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1418,8 +1420,7 @@ class _DetalleRecintoScreen extends ConsumerWidget {
         foregroundColor: _Tema.primary,
         elevation: 0,
         title: Text(recinto.nombre,
-            style:
-                const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
       ),
       body: actasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -1495,8 +1496,8 @@ class _TarjetaActaDetalle extends StatelessWidget {
                   Expanded(
                     child: Text(
                         'Ubicación validada (${acta.gpsLat!.toStringAsFixed(4)}, ${acta.gpsLng!.toStringAsFixed(4)})',
-                        style:
-                            const TextStyle(fontSize: 11, color: _Tema.success)),
+                        style: const TextStyle(
+                            fontSize: 11, color: _Tema.success)),
                   ),
                 ],
               ),
@@ -1513,8 +1514,8 @@ class _TarjetaActaDetalle extends StatelessWidget {
                       size: 14, color: _Tema.warningColor),
                   SizedBox(width: 6),
                   Text('Coordenadas GPS no capturadas',
-                      style: TextStyle(
-                          fontSize: 11, color: _Tema.warningColor)),
+                      style:
+                          TextStyle(fontSize: 11, color: _Tema.warningColor)),
                 ],
               ),
             ),
@@ -1558,14 +1559,11 @@ class _CardKPI extends StatelessWidget {
   final String value;
   final IconData icon;
   final double? progress;
-  final Color? valueColor;
-
   const _CardKPI({
     required this.label,
     required this.value,
     required this.icon,
     this.progress,
-    this.valueColor,
   });
 
   @override
@@ -1593,10 +1591,10 @@ class _CardKPI extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(value,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: valueColor ?? _Tema.onSurface)),
+                  color: _Tema.onSurface)),
           if (progress != null) ...[
             const SizedBox(height: 8),
             ClipRRect(
@@ -1645,8 +1643,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 4),
             Text(sub,
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 12, color: _Tema.greyLight)),
+                style: const TextStyle(fontSize: 12, color: _Tema.greyLight)),
             if (onTap != null) ...[
               const SizedBox(height: 16),
               FilledButton(
@@ -1709,17 +1706,15 @@ class _CampoForm extends StatelessWidget {
       const SizedBox(height: 6),
       TextFormField(
         controller: ctrl,
-        keyboardType:
-            keyboard ?? (digitsOnly ? TextInputType.number : TextInputType.text),
+        keyboardType: keyboard ??
+            (digitsOnly ? TextInputType.number : TextInputType.text),
         inputFormatters: [
           if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-          if (maxLength != null)
-            LengthLimitingTextInputFormatter(maxLength),
+          if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
         ],
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle:
-              const TextStyle(fontSize: 13, color: _Tema.greyLight),
+          hintStyle: const TextStyle(fontSize: 13, color: _Tema.greyLight),
           filled: true,
           fillColor: Colors.white,
           counterText: '',

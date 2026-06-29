@@ -101,9 +101,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 mensaje,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF475467),
-                    height: 1.5),
+                    fontSize: 14, color: Color(0xFF475467), height: 1.5),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -118,8 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                   child: const Text('Entendido',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600)),
+                          color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
@@ -132,17 +129,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Bottom Sheet de selección de rol ──────────────────────────────────────
   void _mostrarSelectorRol() {
     final roles = [
-      _RolOpcion(
+      const _RolOpcion(
         label: 'Coordinador Provincial',
         descripcion: 'Supervisión general del proceso electoral',
         icon: Icons.account_balance_outlined,
       ),
-      _RolOpcion(
+      const _RolOpcion(
         label: 'Coordinador de Recinto',
         descripcion: 'Gestión de mesas y veedores del recinto',
         icon: Icons.location_city_outlined,
       ),
-      _RolOpcion(
+      const _RolOpcion(
         label: 'Veedor',
         descripcion: 'Ingreso y seguimiento de actas',
         icon: Icons.how_to_vote_outlined,
@@ -288,8 +285,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           child: FadeTransition(
             opacity: _fadeAnim,
             child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.height - 60),
                 child: Column(
@@ -370,20 +366,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                    color: const Color(0xFFD0D5DD)),
+                                border:
+                                    Border.all(color: const Color(0xFFD0D5DD)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                      Icons.account_circle_outlined,
-                                      color: Color(0xFF667085),
-                                      size: 20),
+                                  const Icon(Icons.account_circle_outlined,
+                                      color: Color(0xFF667085), size: 20),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      _selectedRol ??
-                                          'Seleccionar un rol',
+                                      _selectedRol ?? 'Seleccionar un rol',
                                       style: TextStyle(
                                           color: _selectedRol != null
                                               ? const Color(0xFF101828)
@@ -391,8 +384,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                           fontSize: 14),
                                     ),
                                   ),
-                                  const Icon(
-                                      Icons.keyboard_arrow_down_rounded,
+                                  const Icon(Icons.keyboard_arrow_down_rounded,
                                       color: Color(0xFF667085)),
                                 ],
                               ),
@@ -417,8 +409,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                           // ── Contraseña ────────────────────────────────────
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildLabel('Contraseña'),
                               GestureDetector(
@@ -448,8 +439,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 color: const Color(0xFF98A2B3),
                                 size: 20,
                               ),
-                              onPressed: () => setState(() =>
-                                  _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -467,8 +458,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 : ElevatedButton(
                                     onPressed: _onLoginPressed,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          const Color(0xFF2B1CB1),
+                                      backgroundColor: const Color(0xFF2B1CB1),
                                       elevation: 2,
                                       shadowColor: const Color(0xFF3422CD)
                                           .withOpacity(0.3),
@@ -503,8 +493,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info,
-                              color: Color(0xFF065F46), size: 20),
+                          Icon(Icons.info, color: Color(0xFF065F46), size: 20),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -560,8 +549,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Color(0xFF98A2B3)),
-        prefixIcon:
-            Icon(icon, color: const Color(0xFF667085), size: 20),
+        prefixIcon: Icon(icon, color: const Color(0xFF667085), size: 20),
         suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
@@ -575,21 +563,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
+            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
     );
   }
 
   String _mensajeError(String error) {
-    if (error.contains('Cédula inválida'))
+    if (error.contains('Cédula inválida')) {
       return 'Cédula inválida. Verifica el número ingresado.';
-    if (error.contains('Invalid credentials'))
+    }
+    if (error.contains('Invalid credentials')) {
       return 'Cédula o contraseña incorrectos. Inténtalo de nuevo.';
-    if (error.contains('rate_limit'))
+    }
+    if (error.contains('rate_limit')) {
       return 'Demasiados intentos fallidos. Espera unos minutos antes de volver a intentarlo.';
-    if (error.contains('No se encontró un perfil'))
+    }
+    if (error.contains('No se encontró un perfil')) {
       return 'Este usuario no está registrado en el sistema.';
+    }
     return 'Ocurrió un error al iniciar sesión. Inténtalo de nuevo.';
   }
 }

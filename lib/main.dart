@@ -19,7 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: SupabaseConstants.url,
-    anonKey: SupabaseConstants.anonKey,
+    publishableKey: SupabaseConstants.anonKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.implicit,
     ),
@@ -99,13 +99,15 @@ class _ControlElectoralAppState extends State<ControlElectoralApp> {
     } else if (type == 'signup') {
       navigatorKey.currentState
           ?.pushNamedAndRemoveUntil('/login', (r) => false);
-      final ctx = navigatorKey.currentState?.overlay?.context;
-      if (ctx != null) {
-        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-          content: Text('✅ Cuenta confirmada. Ya puedes iniciar sesión.'),
-          backgroundColor: Color(0xFF039855),
-        ));
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = navigatorKey.currentState?.overlay?.context;
+        if (ctx != null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+            content: Text('✅ Cuenta confirmada. Ya puedes iniciar sesión.'),
+            backgroundColor: Color(0xFF039855),
+          ));
+        }
+      });
     }
   }
 

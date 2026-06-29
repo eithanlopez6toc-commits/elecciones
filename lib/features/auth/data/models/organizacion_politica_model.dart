@@ -17,4 +17,13 @@ class OrganizacionPoliticaModel extends OrganizacionPolitica {
       candidatoNombre: map['candidato_nombre'] as String?,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'lista_numero': listaNumero,
+      'candidato_nombre': candidatoNombre,
+    };
+  }
 }

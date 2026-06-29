@@ -78,6 +78,7 @@ class Acta {
   final EstadoActa estado;
   final DateTime createdAt;
   final bool pendienteSync;
+  
 
   const Acta({
     required this.id,

@@ -1,15 +1,4 @@
 // lib/features/auth/presentation/veedor/acta_form_screen.dart
-//
-// CAMBIOS vs versión anterior:
-//  1. Foto SIEMPRE horizontal (corrección EXIF con paquete image)
-//  2. Foto completa (BoxFit.contain) + toque para agrandar (InteractiveViewer)
-//  3. Guardar → Diálogo éxito → [Aceptar] → vuelve al formulario (SIN vista previa)
-//  4. GPS: mapa OSM con marcador (flutter_map) + coordenadas en texto
-//  5. GPS desactivado → diálogo "Activar GPS"; sin permiso → diálogo "Otorgar permisos"
-//  6. Votos deben ser EXACTOS al total de sufragantes (ver acta_form_controller.dart)
-//  7. Persistencia offline con sqflite + sync automático al reconectar
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'dart:io';
 
 import 'package:camera/camera.dart';
@@ -25,10 +14,11 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../domain/entities/acta.dart';
 import '../../domain/entities/organizacion_politica.dart';
 import 'acta_form_controller.dart';
+import 'acta_vista_previa_screen.dart';
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class _T {
   static const primary = Color(0xFF003EC7);
   static const outline = Color(0xFFE2E8F0);
@@ -47,36 +37,18 @@ class _T {
   static const brandAccent = Color(0xFFEFF6FF);
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// DATOS DE PARTIDOS POR DIGNIDAD
-// ═════════════════════════════════════════════════════════════════════════════
-const _partidosPorDignidad = {
-  Dignidad.prefecto: [
-    '1. UNES',
-    '5. Movimiento Revolución Ciudadana',
-    '6. Partido Social Cristiano',
-    '12. Avanza',
-    '18. Pachakutik',
-  ],
-  Dignidad.alcalde: [
-    '1. UNES',
-    '5. Movimiento Revolución Ciudadana',
-    '6. Partido Social Cristiano',
-    '12. Avanza',
-    '18. Pachakutik',
-  ],
-};
-
-// ═════════════════════════════════════════════════════════════════════════════
-// HELPER: corregir rotación EXIF y forzar landscape
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER: corrección EXIF → siempre landscape
+// ─────────────────────────────────────────────────────────────────────────────
 Future<File> _corregirRotacionFoto(XFile xfile) async {
   final bytes = await xfile.readAsBytes();
   final original = img.decodeImage(bytes);
   if (original == null) return File(xfile.path);
 
+  // bakeOrientation aplica la rotación EXIF primero
   img.Image corregida = img.bakeOrientation(original);
 
+  // ★ FIX foto al revés: solo rotamos si SIGUE siendo portrait tras bakeOrientation
   if (corregida.height > corregida.width) {
     corregida = img.copyRotate(corregida, angle: 90);
   }
@@ -86,9 +58,9 @@ Future<File> _corregirRotacionFoto(XFile xfile) async {
   return file;
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // PANTALLA PRINCIPAL
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class ActaFormScreen extends ConsumerStatefulWidget {
   final int mesaId;
   final String mesaNombre;
@@ -122,7 +94,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
   late final TextEditingController _ctrlNulos;
   late final TextEditingController _ctrlBlancos;
   late final ActaFormArgs _args;
-
   bool _modoCorreccion = false;
 
   bool get _esEdicion => widget.actaExistente != null;
@@ -152,14 +123,11 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     _ctrlBlancos = TextEditingController(
         text: (widget.actaExistente?.votosBlancos ?? 0).toString());
 
-    // Modal informativo al abrir (solo creación, solo veedor)
     if (!_esEdicion && !_esCoordinador) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mostrarModalPartidos();
-      });
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _mostrarModalPartidos());
     }
 
-    // Escuchar reconexión para sincronizar pendientes
     Connectivity().onConnectivityChanged.listen((results) {
       if (!results.contains(ConnectivityResult.none) && mounted) {
         ref
@@ -171,15 +139,17 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
 
   @override
   void dispose() {
-    for (final c in _ctrlOrg.values) c.dispose();
+    for (final c in _ctrlOrg.values) {
+      c.dispose();
+    }
     _ctrlNulos.dispose();
     _ctrlBlancos.dispose();
     super.dispose();
   }
 
-  // ── Modal de partidos al abrir ────────────────────────────────────────────
+  // ── Modal de organizaciones ───────────────────────────────────────────────
   void _mostrarModalPartidos() {
-    final partidos = _partidosPorDignidad[widget.dignidad] ?? [];
+    final orgs = widget.organizaciones;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -201,31 +171,47 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Esta mesa tiene ${partidos.length} organizaciones políticas para ${widget.dignidad.etiqueta}:',
+              'Esta mesa tiene ${orgs.length} organizaciones para ${widget.dignidad.etiqueta}:',
               style: const TextStyle(fontSize: 13, color: _T.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
-            ...partidos.map(
-              (p) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                        shape: BoxShape.circle, color: _T.primary),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(p,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: _T.onSurface,
-                            fontWeight: FontWeight.w500)),
-                  ),
-                ]),
-              ),
-            ),
+            // ★ FIX candidatos: mostramos partido + candidato en el modal
+            ...orgs.map((org) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 5),
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                              shape: BoxShape.circle, color: _T.primary),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${org.listaNumero}. ${org.nombre}',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: _T.onSurface,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                if (org.candidatoNombre != null &&
+                                    org.candidatoNombre!.isNotEmpty)
+                                  Text(
+                                    org.candidatoNombre!,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: _T.onSurfaceVariant),
+                                  ),
+                              ]),
+                        ),
+                      ]),
+                )),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -233,12 +219,12 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                 color: _T.warningContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(children: const [
+              child: const Row(children: [
                 Icon(Icons.info_outline, size: 14, color: _T.warningColor),
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'El total de votos debe coincidir exactamente con el total de sufragantes de la mesa.',
+                    'El total de votos debe coincidir exactamente con el total de sufragantes.',
                     style: TextStyle(fontSize: 11, color: _T.warningColor),
                   ),
                 ),
@@ -261,10 +247,9 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     );
   }
 
-  // ── Cámara: verificar GPS y permisos antes de abrir ──────────────────────
+  // ── Cámara ────────────────────────────────────────────────────────────────
   Future<void> _abrirCamara() async {
     var locationStatus = await Permission.locationWhenInUse.status;
-
     if (locationStatus.isDenied) {
       locationStatus = await Permission.locationWhenInUse.request();
     }
@@ -287,8 +272,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                     fontWeight: FontWeight.w700)),
           ]),
           content: const Text(
-            'Se necesita acceso a la ubicación GPS para validar y registrar el acta correctamente.\n\n'
-            'Sin el permiso GPS no es posible fotografiar el acta.',
+            'Se necesita acceso a la ubicación GPS para validar y registrar el acta correctamente.\n\nSin el permiso GPS no es posible fotografiar el acta.',
             style: TextStyle(fontSize: 13, color: _T.onSurface),
           ),
           actions: [
@@ -342,8 +326,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                     fontWeight: FontWeight.w700)),
           ]),
           content: const Text(
-            'El GPS de tu dispositivo está desactivado.\n\n'
-            'Actívalo para poder fotografiar el acta con la ubicación de la mesa.',
+            'El GPS de tu dispositivo está desactivado.\n\nActívalo para poder fotografiar el acta.',
             style: TextStyle(fontSize: 13, color: _T.onSurface),
           ),
           actions: [
@@ -396,10 +379,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
 
     if (xfile != null && mounted) {
       ref.read(actaFormProvider(_args).notifier).setProcesandoFoto(true);
-
       try {
         final fileCorregido = await _corregirRotacionFoto(xfile);
-
         await ref
             .read(actaFormProvider(_args).notifier)
             .procesarFotoDesdeCamera(XFile(fileCorregido.path));
@@ -415,11 +396,10 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     }
   }
 
-  // ── Guardar con validación previa ─────────────────────────────────────────
+  // ── Guardar → navega a vista previa ──────────────────────────────────────
   Future<void> _guardar() async {
     final state = ref.read(actaFormProvider(_args));
 
-    // BLOQUEO: votos no coinciden exactamente con sufragantes
     if (!state.esConsistente) {
       final diferencia = state.totalSufragantes - state.totalContabilizado;
       await showDialog(
@@ -440,11 +420,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           ]),
           content: Text(
             diferencia > 0
-                ? 'Faltan $diferencia votos para llegar al total de sufragantes '
-                    '(${state.totalSufragantes}). El total contabilizado debe ser exacto.'
-                : 'El total de votos contabilizados (${state.totalContabilizado}) '
-                    'supera el total de sufragantes de la mesa (${state.totalSufragantes}) '
-                    'por ${-diferencia}.\n\nEl total debe coincidir exactamente.',
+                ? 'Faltan $diferencia votos para llegar al total de sufragantes (${state.totalSufragantes}).'
+                : 'Los votos (${state.totalContabilizado}) superan el total (${state.totalSufragantes}) por ${-diferencia}.',
             style: const TextStyle(fontSize: 13, color: _T.onSurface),
           ),
           actions: [
@@ -469,83 +446,25 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
         .guardarActa(userId: widget.userId);
 
     final stateActualizado = ref.read(actaFormProvider(_args));
-    if (stateActualizado.guardadoExito && mounted) {
-      // Diálogo de ÉXITO — al aceptar, vuelve directo al formulario actualizado
-      // (sin vista previa intermedia).
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: stateActualizado.pendienteSync
-                    ? _T.warningContainer
-                    : _T.successContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                stateActualizado.pendienteSync
-                    ? Icons.cloud_off
-                    : Icons.check_circle_outline,
-                color: stateActualizado.pendienteSync
-                    ? _T.warningColor
-                    : _T.success,
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              stateActualizado.pendienteSync
-                  ? 'Acta guardada localmente'
-                  : (_modoCorreccion
-                      ? '¡Corrección guardada!'
-                      : (_esEdicion
-                          ? '¡Acta actualizada!'
-                          : '¡Acta registrada!')),
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: stateActualizado.pendienteSync
-                    ? _T.warningColor
-                    : _T.success,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              stateActualizado.pendienteSync
-                  ? 'El acta se sincronizará automáticamente con el servidor cuando haya conexión a internet.'
-                  : 'Los datos fueron enviados correctamente al servidor electoral.',
-              style: const TextStyle(fontSize: 13, color: _T.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-          ]),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: stateActualizado.pendienteSync
-                    ? _T.warningColor
-                    : _T.primary,
-                minimumSize: const Size(160, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              // Cierra el diálogo y se queda en ActaFormScreen,
-              // ya con los datos actualizados y el botón "Actualizar acta" visible.
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Aceptar',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ],
+    if (!stateActualizado.guardadoExito || !mounted) return;
+
+    // ★ FIX: navegar a VISTA PREVIA (pantalla real, no modal)
+    final actaGuardada = stateActualizado.actaGuardada;
+    if (actaGuardada == null) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ActaVistaPreviewScreen(
+          acta: actaGuardada,
+          mesaNombre: widget.mesaNombre,
+          recintoNombre: widget.recintoNombre,
+          organizaciones: widget.organizaciones,
+          userId: widget.userId,
+          esCoordinador: _esCoordinador,
+          pendienteSync: stateActualizado.pendienteSync,
         ),
-      );
-    }
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -601,8 +520,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
         ]),
         actions: [
           if (_esEdicion && !_esCoordinador)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
               child: Center(
                 child: _Pill(
                     label: 'Editando',
@@ -611,8 +530,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
               ),
             ),
           if (_esCoordinador)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
               child: Center(
                 child: _Pill(
                     label: 'Coordinador',
@@ -633,7 +552,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
             ),
             const SizedBox(height: 10),
           ],
-
           _CardInfoMesa(
             recinto: widget.recintoNombre,
             mesa: widget.mesaNombre,
@@ -641,7 +559,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
             totalSufragantes: widget.totalSufragantes,
           ),
           const SizedBox(height: 12),
-
           if (_esCoordinador && _esEdicion) ...[
             _CardEstadoActa(
               acta: widget.actaExistente!,
@@ -650,7 +567,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
             ),
             const SizedBox(height: 12),
           ],
-
           _CardVotos(
             organizaciones: widget.organizaciones,
             ctrlOrg: _ctrlOrg,
@@ -669,7 +585,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                 .actualizarVotosBlancos(val),
           ),
           const SizedBox(height: 12),
-
           _CardFoto(
             fotoFile: state.fotoFile,
             urlFotoExistente: widget.actaExistente?.urlFotoActa,
@@ -678,16 +593,14 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
             onTomarFoto: _abrirCamara,
           ),
           const SizedBox(height: 12),
-
           _CardGps(
             lat: state.gpsLat,
             lng: state.gpsLng,
             cargando: state.cargandoGps,
           ),
           const SizedBox(height: 16),
-
           if (_editable) ...[
-            if (!state.esConsistente) ...[
+            if (!state.esConsistente)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -702,16 +615,13 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'No puedes guardar: el total debe ser exactamente '
-                      '${state.totalSufragantes} votos (actualmente ${state.totalContabilizado}).',
+                      'No puedes guardar: el total debe ser exactamente ${state.totalSufragantes} votos (actualmente ${state.totalContabilizado}).',
                       style:
                           const TextStyle(fontSize: 12, color: _T.errorColor),
                     ),
                   ),
                 ]),
               ),
-            ],
-
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor:
@@ -758,9 +668,9 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // BANNER OFFLINE
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class _BannerOffline extends StatelessWidget {
   final VoidCallback onReintentarSync;
   const _BannerOffline({required this.onReintentarSync});
@@ -792,9 +702,9 @@ class _BannerOffline extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: ESTADO ACTUAL (coordinador) + botón corrección
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA: ESTADO ACTUAL (coordinador)
+// ─────────────────────────────────────────────────────────────────────────────
 class _CardEstadoActa extends StatelessWidget {
   final Acta acta;
   final bool modoCorreccion;
@@ -811,61 +721,56 @@ class _CardEstadoActa extends StatelessWidget {
     return _Seccion(
       titulo: 'Estado del acta',
       icono: Icons.verified_outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Text('Estado actual:',
-                style: TextStyle(fontSize: 13, color: _T.onSurfaceVariant)),
-            const SizedBox(width: 10),
-            _pillEstado(acta.estado),
-          ]),
-          const SizedBox(height: 10),
-          if (!modoCorreccion)
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _T.warningColor,
-                side: const BorderSide(color: _T.warningColor),
-                minimumSize: const Size.fromHeight(40),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: onActivarCorreccion,
-              icon: const Icon(Icons.edit_outlined, size: 16),
-              label: const Text('Corregir datos del acta',
-                  style: TextStyle(fontSize: 13)),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: _T.warningContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(children: [
-                Icon(Icons.edit_outlined, size: 14, color: _T.warningColor),
-                SizedBox(width: 6),
-                Text('Modo corrección activado',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: _T.warningColor,
-                        fontWeight: FontWeight.w600)),
-              ]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Text('Estado actual:',
+              style: TextStyle(fontSize: 13, color: _T.onSurfaceVariant)),
+          const SizedBox(width: 10),
+          _pillEstado(acta.estado),
+        ]),
+        const SizedBox(height: 10),
+        if (!modoCorreccion)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _T.warningColor,
+              side: const BorderSide(color: _T.warningColor),
+              minimumSize: const Size.fromHeight(40),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
-        ],
-      ),
+            onPressed: onActivarCorreccion,
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            label: const Text('Corregir datos del acta',
+                style: TextStyle(fontSize: 13)),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _T.warningContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(children: [
+              Icon(Icons.edit_outlined, size: 14, color: _T.warningColor),
+              SizedBox(width: 6),
+              Text('Modo corrección activado',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _T.warningColor,
+                      fontWeight: FontWeight.w600)),
+            ]),
+          ),
+      ]),
     );
   }
 
-  Widget _pillEstado(EstadoActa estado) {
-    return switch (estado) {
-      EstadoActa.ingresada => _pill('Ingresada', _T.primary, _T.brandAccent),
-      EstadoActa.revisada =>
-        _pill('Escrutado 100%', _T.success, _T.successContainer),
-      EstadoActa.conNovedad =>
-        _pill('Con novedad', _T.errorColor, _T.errorContainer),
-    };
-  }
+  Widget _pillEstado(EstadoActa estado) => switch (estado) {
+        EstadoActa.ingresada => _pill('Ingresada', _T.primary, _T.brandAccent),
+        EstadoActa.revisada =>
+          _pill('Escrutado 100%', _T.success, _T.successContainer),
+        EstadoActa.conNovedad =>
+          _pill('Con novedad', _T.errorColor, _T.errorContainer),
+      };
 
   Widget _pill(String label, Color color, Color bg) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -877,9 +782,9 @@ class _CardEstadoActa extends StatelessWidget {
       );
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: INFO DE LA MESA
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA: INFO MESA
+// ─────────────────────────────────────────────────────────────────────────────
 class _CardInfoMesa extends StatelessWidget {
   final String recinto, mesa, dignidad;
   final int totalSufragantes;
@@ -920,9 +825,9 @@ class _CardInfoMesa extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: VOTOS
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA: VOTOS — ★ FIX candidatos: muestra partido + nombre del candidato
+// ─────────────────────────────────────────────────────────────────────────────
 class _CardVotos extends StatelessWidget {
   final List<OrganizacionPolitica> organizaciones;
   final Map<int, TextEditingController> ctrlOrg;
@@ -946,13 +851,11 @@ class _CardVotos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inconsistente = !state.esConsistente;
-
     return _Seccion(
       titulo: 'Votos por organización política',
       icono: Icons.how_to_vote_outlined,
       child: Column(children: [
-        if (inconsistente)
+        if (!state.esConsistente)
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(10),
@@ -967,18 +870,19 @@ class _CardVotos extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'El total debe ser exactamente ${state.totalSufragantes} votos '
-                  '(actualmente ${state.totalContabilizado}).',
+                  'El total debe ser exactamente ${state.totalSufragantes} votos (actualmente ${state.totalContabilizado}).',
                   style: const TextStyle(fontSize: 12, color: _T.errorColor),
                 ),
               ),
             ]),
           ),
 
+        // ★ FIX: label muestra "Lista. Partido\nCandidato"
         ...organizaciones.map((org) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _FilaVotos(
-                label: '${org.listaNumero}. ${org.nombre}',
+                partido: '${org.listaNumero}. ${org.nombre}',
+                candidato: org.candidatoNombre,
                 controller: ctrlOrg[org.id]!,
                 color: _T.surfaceContainerLow,
                 textColor: _T.primary,
@@ -993,7 +897,7 @@ class _CardVotos extends StatelessWidget {
             margin: const EdgeInsets.symmetric(vertical: 8)),
 
         _FilaVotos(
-          label: 'Votos nulos',
+          partido: 'Votos nulos',
           controller: ctrlNulos,
           color: _T.warningContainer,
           textColor: _T.warningColor,
@@ -1002,7 +906,7 @@ class _CardVotos extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _FilaVotos(
-          label: 'Votos blancos',
+          partido: 'Votos blancos',
           controller: ctrlBlancos,
           color: _T.surfaceContainerLow,
           textColor: _T.primary,
@@ -1039,13 +943,16 @@ class _CardVotos extends StatelessWidget {
 }
 
 class _FilaVotos extends StatelessWidget {
-  final String label;
+  final String partido;
+  final String? candidato; // ★ nuevo campo
   final TextEditingController controller;
   final Color color, textColor;
   final bool enabled;
   final ValueChanged<String> onChanged;
+
   const _FilaVotos({
-    required this.label,
+    required this.partido,
+    this.candidato,
     required this.controller,
     required this.color,
     required this.textColor,
@@ -1055,18 +962,35 @@ class _FilaVotos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Expanded(
         flex: 3,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
               color: color, borderRadius: BorderRadius.circular(8)),
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 12, color: textColor, fontWeight: FontWeight.w500),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(partido,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: textColor,
+                      fontWeight: FontWeight.w600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+              // ★ FIX candidatos: segunda línea con el nombre
+              if (candidato != null && candidato!.isNotEmpty)
+                Text(candidato!,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: textColor.withOpacity(0.75),
+                        fontWeight: FontWeight.w400),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+            ],
+          ),
         ),
       ),
       const SizedBox(width: 8),
@@ -1128,9 +1052,9 @@ class _BadgeConsistencia extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // TARJETA: FOTO
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class _CardFoto extends StatelessWidget {
   final File? fotoFile;
   final String? urlFotoExistente;
@@ -1154,12 +1078,8 @@ class _CardFoto extends StatelessWidget {
         insetPadding: EdgeInsets.zero,
         child: Stack(children: [
           Center(
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 5.0,
-              child: imagen,
-            ),
-          ),
+              child: InteractiveViewer(
+                  minScale: 0.5, maxScale: 5.0, child: imagen)),
           Positioned(
             top: 12,
             right: 12,
@@ -1211,18 +1131,12 @@ class _CardFoto extends StatelessWidget {
         else if (tieneNuevaFoto) ...[
           GestureDetector(
             onTap: () => _verFotoCompleta(
-              context,
-              Image.file(fotoFile!, fit: BoxFit.contain),
-            ),
+                context, Image.file(fotoFile!, fit: BoxFit.contain)),
             child: Stack(children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  fotoFile!,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  height: 220,
-                ),
+                child: Image.file(fotoFile!,
+                    fit: BoxFit.contain, width: double.infinity, height: 220),
               ),
               Positioned(
                 bottom: 8,
@@ -1260,9 +1174,7 @@ class _CardFoto extends StatelessWidget {
         ] else if (tieneFotoExistente) ...[
           GestureDetector(
             onTap: () => _verFotoCompleta(
-              context,
-              Image.network(urlFotoExistente!, fit: BoxFit.contain),
-            ),
+                context, Image.network(urlFotoExistente!, fit: BoxFit.contain)),
             child: Stack(children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -1373,9 +1285,9 @@ class _CardFoto extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA: GPS — coordenadas + mapa OSM con marcador
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+// TARJETA: GPS — ★ FIX mapa interactivo (InteractiveFlag.all)
+// ─────────────────────────────────────────────────────────────────────────────
 class _CardGps extends StatelessWidget {
   final double? lat, lng;
   final bool cargando;
@@ -1436,7 +1348,6 @@ class _CardGps extends StatelessWidget {
             ),
           ]),
         ),
-
         Row(children: [
           Expanded(
               child: _Campo(
@@ -1450,7 +1361,6 @@ class _CardGps extends StatelessWidget {
                   valor: lng != null ? lng!.toStringAsFixed(6) : '—',
                   disabled: true)),
         ]),
-
         if (tieneGps) ...[
           const SizedBox(height: 12),
           ClipRRect(
@@ -1461,8 +1371,9 @@ class _CardGps extends StatelessWidget {
                 options: MapOptions(
                   initialCenter: LatLng(lat!, lng!),
                   initialZoom: 15.0,
+                  // ★ FIX: mapa seleccionable/interactivo
                   interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.none,
+                    flags: InteractiveFlag.all,
                   ),
                 ),
                 children: [
@@ -1476,11 +1387,8 @@ class _CardGps extends StatelessWidget {
                       point: LatLng(lat!, lng!),
                       width: 44,
                       height: 44,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: Colors.red,
-                        size: 44,
-                      ),
+                      child: const Icon(Icons.location_pin,
+                          color: Colors.red, size: 44),
                     ),
                   ]),
                 ],
@@ -1488,14 +1396,13 @@ class _CardGps extends StatelessWidget {
             ),
           ),
         ],
-
         const SizedBox(height: 8),
         const Row(children: [
           Icon(Icons.info_outline, size: 12, color: _T.greyLight),
           SizedBox(width: 4),
           Expanded(
             child: Text(
-              'Las coordenadas se capturan automáticamente al fotografiar el acta y se almacenan como campo del registro.',
+              'Las coordenadas se capturan automáticamente al fotografiar el acta.',
               style: TextStyle(fontSize: 11, color: _T.greyLight),
             ),
           ),
@@ -1505,9 +1412,9 @@ class _CardGps extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // WIDGETS AUXILIARES
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
   final String label;
   final Color color, bg;
@@ -1602,9 +1509,9 @@ class _Campo extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 // PÁGINA DE CÁMARA
-// ═════════════════════════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
 class _CameraCapturePage extends StatefulWidget {
   final CameraDescription camera;
   const _CameraCapturePage({required this.camera});
@@ -1621,11 +1528,8 @@ class _CameraCapturePageState extends State<_CameraCapturePage> {
   @override
   void initState() {
     super.initState();
-    _controller = CameraController(
-      widget.camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
+    _controller = CameraController(widget.camera, ResolutionPreset.high,
+        enableAudio: false);
     _initFuture = _controller.initialize();
   }
 

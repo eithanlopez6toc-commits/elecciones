@@ -1,7 +1,11 @@
+// lib/features/auth/presentation/controller/login_controller.dart
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/usuario.dart';
 import '../../data/models/usuario_model.dart';
+import '../../data/datasources/usuario_cache_service.dart';
 import '../../providers/auth_providers.dart';
 import '../../data/datasources/supabase_client_provider.dart';
 
@@ -19,15 +23,26 @@ class UsuarioNotifier extends StateNotifier<Usuario?> {
           .from('usuarios')
           .select()
           .eq('id', session.user.id)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 6));
 
-      state = UsuarioModel.fromMap(
+      final usuario = UsuarioModel.fromMap(
         data,
         correo: session.user.email ?? '',
       );
+
+      state = usuario;
+      await UsuarioCacheService.guardar(usuario);
     } catch (e) {
-      // Si falla la consulta (sin internet, etc.), se intenta un fallback
-      // mínimo con los metadatos de auth para no dejar al usuario sin sesión.
+      // Sin internet u otro error: restauramos el último usuario válido
+      // que quedó guardado en disco la última vez que hubo conexión.
+      final cacheado = await UsuarioCacheService.leer();
+      if (cacheado != null && cacheado.id == session.user.id) {
+        state = cacheado;
+        return;
+      }
+
+      // Último recurso: metadatos de auth (normalmente incompletos).
       final meta = session.user.userMetadata;
       state = Usuario(
         id: session.user.id,
@@ -56,7 +71,11 @@ class UsuarioNotifier extends StateNotifier<Usuario?> {
     }
   }
 
-  void setUsuario(Usuario u) => state = u;
+  void setUsuario(Usuario u) {
+    state = u;
+    UsuarioCacheService.guardar(u);
+  }
+
   void clear() => state = null;
 }
 
@@ -99,11 +118,29 @@ class LoginController extends AsyncNotifier<Usuario?> {
     }
   }
 
+  /// Cierra sesión SIN esperar la respuesta del servidor.
+  /// Limpia todo el estado local primero (instantáneo) y deja el
+  /// signOut() remoto corriendo en background con timeout corto,
+  /// para que el botón nunca se quede "colgado" sin conexión.
   Future<void> logout() async {
+    // 1. Limpiar estado local primero — esto es lo que la UI necesita
+    //    para navegar a /login de inmediato.
     try {
-      await ref.read(supabaseClientProvider).auth.signOut();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('rol_usuario');
+      await prefs.remove('usuario_id');
     } catch (_) {}
+
+    await UsuarioCacheService.limpiar();
     ref.read(usuarioActualProvider.notifier).clear();
     state = const AsyncData(null);
+
+    // 2. signOut remoto en background, no bloquea la navegación.
+    unawaited(
+      ref.read(supabaseClientProvider).auth.signOut().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {},
+      ).catchError((_) {}),
+    );
   }
 }

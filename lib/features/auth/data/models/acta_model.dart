@@ -4,6 +4,7 @@ import '../../domain/entities/acta.dart';
 class ActaModel {
   static Map<String, dynamic> toMap(Acta acta) {
     return {
+      'id': acta.id,                                   // ← AGREGADO
       'mesa_id': acta.mesaId,
       'usuario_id': acta.usuarioId,
       'dignidad': acta.dignidad?.name,
@@ -15,6 +16,8 @@ class ActaModel {
       'gps_lat': acta.gpsLat,
       'gps_lng': acta.gpsLng,
       'estado': acta.estado.dbValue,
+      'created_at': acta.createdAt.toIso8601String(),  // ← AGREGADO
+      'pendiente_sync': acta.pendienteSync,             // ← AGREGADO (útil para cache)
     };
   }
 

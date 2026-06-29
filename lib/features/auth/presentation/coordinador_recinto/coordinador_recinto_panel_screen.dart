@@ -180,14 +180,14 @@ class _CoordinadorRecintoPanelScreenState
 
     final recintoId = usuario.recintoId;
     if (recintoId == null) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: _Tema.background,
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(Icons.location_off_outlined,
                     size: 48, color: _Tema.greyLight),
                 SizedBox(height: 12),
@@ -868,15 +868,15 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
       ref.invalidate(veedoresDeRecintoProvider(widget.recintoId));
       ref.invalidate(mesasPorRecintoProvider(widget.recintoId));
       _limpiar();
-      if (context.mounted) {
-        Navigator.pop(sheetContext); // cierra el bottom sheet
+      if (mounted) {
+        if (sheetContext.mounted) Navigator.pop(sheetContext);
         _mostrarExitoDialog(
           context,
           'Veedor registrado correctamente. Se envió un correo de confirmación con sus credenciales de acceso.',
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         _mostrarErrorDialog(context, _mensajeAmigable(e.toString()));
       }
     } finally {
@@ -1005,17 +1005,17 @@ class _TabVeedoresState extends ConsumerState<_TabVeedores> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(children: [
-                          const Icon(Icons.grid_view_outlined,
+                        const Row(children: [
+                          Icon(Icons.grid_view_outlined,
                               size: 14, color: _Tema.onSurfaceVariant),
-                          const SizedBox(width: 6),
-                          const Text('Mesa a Asignar (JRV)',
+                          SizedBox(width: 6),
+                          Text('Mesa a Asignar (JRV)',
                               style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _Tema.onSurfaceVariant)),
-                          const SizedBox(width: 4),
-                          const Text('*',
+                          SizedBox(width: 4),
+                          Text('*',
                               style: TextStyle(
                                   color: _Tema.errorColor,
                                   fontWeight: FontWeight.bold,
@@ -1839,7 +1839,6 @@ class _CampoForm extends StatelessWidget {
   final String hint;
   final bool digitsOnly;
   final int? maxLength;
-  final bool obligatorio;
   final String? Function(String?)? validator;
   final TextInputType? keyboard;
 
@@ -1850,7 +1849,6 @@ class _CampoForm extends StatelessWidget {
     this.icono,
     this.digitsOnly = false,
     this.maxLength,
-    this.obligatorio = true,
     this.validator,
     this.keyboard,
   });
@@ -1867,14 +1865,12 @@ class _CampoForm extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: _Tema.onSurfaceVariant)),
-        if (obligatorio) ...[
-          const SizedBox(width: 4),
-          const Text('*',
-              style: TextStyle(
-                  color: _Tema.errorColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14)),
-        ],
+        const SizedBox(width: 4),
+        const Text('*',
+            style: TextStyle(
+                color: _Tema.errorColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14)),
       ]),
       const SizedBox(height: 6),
       TextFormField(
@@ -1887,11 +1883,9 @@ class _CampoForm extends StatelessWidget {
         ],
         decoration: _inputDeco(hint),
         validator: validator ??
-            (obligatorio
-                ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'Este campo es obligatorio'
-                    : null
-                : null),
+            (v) => (v == null || v.trim().isEmpty)
+                ? 'Este campo es obligatorio'
+                : null,
       ),
     ]);
   }

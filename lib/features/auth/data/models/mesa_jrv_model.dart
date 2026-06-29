@@ -4,6 +4,7 @@ import '../../domain/entities/mesa_jrv.dart';
 class MesaJrvModel {
   static Map<String, dynamic> toMap(MesaJrv mesa) {
     return {
+      'id': mesa.id,              // ← AGREGADO
       'recinto_id': mesa.recintoId,
       'numero_mesa': mesa.numeroMesa,
       'genero': mesa.genero.dbValue,

@@ -44,11 +44,13 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
       return;
     }
     if (!_esPasswordValida(nueva)) {
-      setState(() => _error = 'Mínimo 8 caracteres, una mayúscula y un número.');
+      setState(
+          () => _error = 'Mínimo 8 caracteres, una mayúscula y un número.');
       return;
     }
     if (nueva == 'Ecuador2026') {
-      setState(() => _error = 'No puedes usar la contraseña inicial. Elige una nueva.');
+      setState(() =>
+          _error = 'No puedes usar la contraseña inicial. Elige una nueva.');
       return;
     }
 
@@ -120,8 +122,12 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
   }
 
   String _mensajeError(String e) {
-    if (e.contains('weak')) return 'Contraseña muy débil. Usa mínimo 8 caracteres.';
-    if (e.contains('same')) return 'La nueva contraseña no puede ser igual a la anterior.';
+    if (e.contains('weak')) {
+      return 'Contraseña muy débil. Usa mínimo 8 caracteres.';
+    }
+    if (e.contains('same')) {
+      return 'La nueva contraseña no puede ser igual a la anterior.';
+    }
     return 'No se pudo cambiar. Intenta de nuevo.';
   }
 
@@ -144,8 +150,8 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Header
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.verified_user_outlined,
                         color: Color(0xFF3422CD), size: 22),
                     SizedBox(width: 8),
@@ -193,7 +199,8 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
                   controller: _nuevaCtrl,
                   hint: 'Mínimo 8 caracteres',
                   obscure: _obscureNueva,
-                  onToggle: () => setState(() => _obscureNueva = !_obscureNueva),
+                  onToggle: () =>
+                      setState(() => _obscureNueva = !_obscureNueva),
                 ),
                 const SizedBox(height: 20),
 
@@ -204,7 +211,8 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
                   controller: _confirmarCtrl,
                   hint: 'Repite tu nueva contraseña',
                   obscure: _obscureConfirmar,
-                  onToggle: () => setState(() => _obscureConfirmar = !_obscureConfirmar),
+                  onToggle: () =>
+                      setState(() => _obscureConfirmar = !_obscureConfirmar),
                 ),
                 const SizedBox(height: 8),
 
@@ -215,9 +223,9 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
                     color: const Color(0xFFF2F4F7),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text('Tu contraseña debe tener:',
                           style: TextStyle(
                               color: Color(0xFF344054),
@@ -225,11 +233,14 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
                               fontWeight: FontWeight.w600)),
                       SizedBox(height: 4),
                       Text('• Al menos 8 caracteres',
-                          style: TextStyle(color: Color(0xFF475467), fontSize: 12)),
+                          style: TextStyle(
+                              color: Color(0xFF475467), fontSize: 12)),
                       Text('• Al menos una letra mayúscula',
-                          style: TextStyle(color: Color(0xFF475467), fontSize: 12)),
+                          style: TextStyle(
+                              color: Color(0xFF475467), fontSize: 12)),
                       Text('• Al menos un número',
-                          style: TextStyle(color: Color(0xFF475467), fontSize: 12)),
+                          style: TextStyle(
+                              color: Color(0xFF475467), fontSize: 12)),
                     ],
                   ),
                 ),
@@ -311,8 +322,8 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Color(0xFF98A2B3)),
-        prefixIcon: const Icon(Icons.lock_outline,
-            color: Color(0xFF667085), size: 20),
+        prefixIcon:
+            const Icon(Icons.lock_outline, color: Color(0xFF667085), size: 20),
         suffixIcon: IconButton(
           icon: Icon(
               obscure
@@ -334,8 +345,7 @@ class _CambiarPasswordScreenState extends ConsumerState<CambiarPasswordScreen> {
             borderSide: const BorderSide(color: Color(0xFFD0D5DD))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
+            borderSide: const BorderSide(color: Color(0xFF3422CD), width: 1.5)),
       ),
     );
   }

@@ -30,15 +30,17 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
       return;
     }
 
-    setState(() { _cargando = true; _error = null; });
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
 
     try {
       final supabase = ref.read(supabaseClientProvider);
 
-      // Llama a la edge function que genera el link y lo manda al correo real
       final response = await supabase.functions.invoke(
         'recuperar-password',
-        body: { 'cedula': cedula },
+        body: {'cedula': cedula},
       );
 
       if (response.data['success'] != true) {
@@ -69,6 +71,21 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.account_balance,
+                          color: Color(0xFF1D4ED8), size: 22),
+                      SizedBox(width: 8),
+                      Text('Electoral Portal',
+                          style: TextStyle(
+                              color: Color(0xFF1D4ED8),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -77,59 +94,10 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFFE4E7EC)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.verified_user_outlined,
-                              color: Color(0xFF1D4ED8), size: 22),
-                          SizedBox(width: 8),
-                          Text('Voter Portal',
-                              style: TextStyle(
-                                  color: Color(0xFF1D4ED8),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-                      _enviado ? _buildSuccessState() : _buildFormState(),
-                    ],
-                  ),
+                  child: _enviado ? _buildSuccessState() : _buildFormState(),
                 ),
                 const SizedBox(height: 20),
-                Column(
-                  children: const [
-                    Text('Election Commission',
-                        style: TextStyle(
-                            color: Color(0xFF344054),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600)),
-                    SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Privacy Policy',
-                            style: TextStyle(
-                                color: Color(0xFF475467), fontSize: 12)),
-                        SizedBox(width: 12),
-                        Text('Technical Support',
-                            style: TextStyle(
-                                color: Color(0xFF475467), fontSize: 12)),
-                        SizedBox(width: 12),
-                        Text('Terms of Service',
-                            style: TextStyle(
-                                color: Color(0xFF475467), fontSize: 12)),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    Text('© 2026 Election Commission. All rights reserved.',
-                        style: TextStyle(
-                            color: Color(0xFF039855),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500)),
-                  ],
-                ),
+                _enviado ? _buildSuccessFooter() : _buildFormFooter(),
               ],
             ),
           ),
@@ -143,7 +111,8 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 56, height: 56,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             color: const Color(0xFFE8E7FF),
             borderRadius: BorderRadius.circular(12),
@@ -163,23 +132,16 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
         const Text(
             'Ingresa tu número de cédula para recibir un enlace de recuperación en tu correo registrado.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Color(0xFF475467), fontSize: 14, height: 1.4)),
+            style:
+                TextStyle(color: Color(0xFF475467), fontSize: 14, height: 1.4)),
         const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text('Número de Cédula',
-                style: TextStyle(
-                    color: Color(0xFF344054),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500)),
-            Text('REQUERIDO',
-                style: TextStyle(
-                    color: Color(0xFF1D4ED8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold)),
-          ],
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Número de Cédula',
+              style: TextStyle(
+                  color: Color(0xFF344054),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500)),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -245,57 +207,33 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
               : ElevatedButton(
                   onPressed: _enviarRecuperacion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F43CD),
+                    backgroundColor: const Color(0xFF1D4ED8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text('Enviar Instrucciones',
+                    children: [
+                      Text('Enviar Enlace',
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.w600)),
-                      SizedBox(width: 8),
-                      Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward, color: Colors.white, size: 16),
                     ],
                   ),
                 ),
         ),
-        const SizedBox(height: 24),
-        const Divider(color: Color(0xFFE4E7EC), thickness: 1),
-        const SizedBox(height: 16),
-        TextButton.icon(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, size: 16, color: Color(0xFF1D4ED8)),
-          label: const Text('Volver al inicio de sesión',
-              style: TextStyle(
-                  color: Color(0xFF1D4ED8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEEF2F6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Icon(Icons.info_outline_rounded,
-                  color: Color(0xFF344054), size: 18),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'El enlace de recuperación llegará al correo personal que registraste al crear tu cuenta.',
-                  style: TextStyle(
-                      color: Color(0xFF344054), fontSize: 11.5, height: 1.4),
-                ),
-              ),
-            ],
+        const SizedBox(height: 20),
+        Center(
+          child: TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Volver al inicio de sesión',
+                style: TextStyle(
+                    color: Color(0xFF1D4ED8),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500)),
           ),
         ),
       ],
@@ -307,46 +245,130 @@ class _OlvidePasswordScreenState extends ConsumerState<OlvidePasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 64, height: 64,
-          decoration: const BoxDecoration(
-              shape: BoxShape.circle, color: Color(0xFFD1FADF)),
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF00C48C),
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: const Icon(Icons.mark_email_read_outlined,
-              color: Color(0xFF039855), size: 32),
+              color: Colors.white, size: 32),
         ),
-        const SizedBox(height: 20),
-        const Text('¡Correo enviado!',
+        const SizedBox(height: 24),
+        const Text('¡Correo Enviado!',
+            textAlign: TextAlign.center,
             style: TextStyle(
                 color: Color(0xFF101828),
                 fontSize: 24,
                 fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
         const Text(
-            'Revisa tu bandeja de entrada y toca el enlace para abrir la app y cambiar tu contraseña.',
+            'Hemos enviado las instrucciones de recuperación a tu bandeja de entrada. Por favor, revisa también tu carpeta de spam.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Color(0xFF475467), fontSize: 14, height: 1.5)),
-        const SizedBox(height: 8),
-        const Text('Si no lo encuentras, revisa tu carpeta de spam.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF98A2B3), fontSize: 12)),
+            style:
+                TextStyle(color: Color(0xFF475467), fontSize: 14, height: 1.5)),
         const SizedBox(height: 32),
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: OutlinedButton(
+          child: ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFD0D5DD)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D4ED8),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Volver al login',
+            child: const Text('Regresar al Inicio de Sesión',
                 style: TextStyle(
-                    color: Color(0xFF344054),
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600)),
           ),
         ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('¿No recibiste el correo?',
+                style: TextStyle(color: Color(0xFF475467), fontSize: 13)),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: () => setState(() {
+                _enviado = false;
+                _cedulaCtrl.clear();
+              }),
+              child: const Text('Reintentar',
+                  style: TextStyle(
+                      color: Color(0xFF1D4ED8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormFooter() {
+    return const Column(
+      children: [
+        Text('DIGITAL DEMOCRACY CORE • 2024',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Color(0xFF344054),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4)),
+        SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 13, color: Color(0xFF667085)),
+            SizedBox(width: 4),
+            Text('Encriptación AES-256',
+                style: TextStyle(color: Color(0xFF667085), fontSize: 11)),
+            SizedBox(width: 12),
+            Icon(Icons.verified_outlined, size: 13, color: Color(0xFF667085)),
+            SizedBox(width: 4),
+            Text('Certificado Gubernamental',
+                style: TextStyle(color: Color(0xFF667085), fontSize: 11)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessFooter() {
+    return const Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.circle, color: Color(0xFF039855), size: 8),
+            SizedBox(width: 6),
+            Text('ESTADO DEL SISTEMA: OPERATIVO',
+                style: TextStyle(
+                    color: Color(0xFF344054),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3)),
+          ],
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Términos de Seguridad',
+                style: TextStyle(color: Color(0xFF475467), fontSize: 11)),
+            SizedBox(width: 16),
+            Text('Protección de Datos',
+                style: TextStyle(color: Color(0xFF475467), fontSize: 11)),
+          ],
+        ),
+        SizedBox(height: 8),
+        Text('© 2024 Portal Electoral Nacional. Todos los derechos reservados.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF98A2B3), fontSize: 10)),
       ],
     );
   }

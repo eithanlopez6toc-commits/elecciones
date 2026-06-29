@@ -13,30 +13,39 @@ class ActaRepositoryImpl implements ActaRepository {
 
   @override
   Future<String> subirFotoActa(File foto) async {
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${foto.path.split('/').last}';
-
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${foto.path.split('/').last}';
     await _supabase.storage
         .from(SupabaseConstants.actasBucket)
         .upload(fileName, foto);
-
-    // Devuelve la URL pública (o usa createSignedUrl si el bucket es privado)
     return _supabase.storage
         .from(SupabaseConstants.actasBucket)
         .getPublicUrl(fileName);
   }
 
   @override
-  Future<void> guardarActa(Acta acta) async {
+  // ★ FIX: ahora retorna Acta con el id asignado por Supabase,
+  //         necesario para navegar a vista previa tras guardar.
+  Future<Acta> guardarActa(Acta acta) async {
     final data = ActaModel.toMap(acta);
 
     if (acta.id == 0) {
-      // Acta nueva: dejamos que Supabase genere el id (BIGSERIAL)
-      await _supabase.from(SupabaseConstants.actasTable).insert(data);
+      // INSERT — Supabase retorna la fila completa con el id generado
+      final resultado = await _supabase
+          .from(SupabaseConstants.actasTable)
+          .insert(data)
+          .select()
+          .single();
+      return ActaModel.fromMap(resultado);
     } else {
-      await _supabase
+      // UPDATE
+      final resultado = await _supabase
           .from(SupabaseConstants.actasTable)
           .update(data)
-          .eq('id', acta.id);
+          .eq('id', acta.id)
+          .select()
+          .single();
+      return ActaModel.fromMap(resultado);
     }
   }
 
@@ -46,7 +55,6 @@ class ActaRepositoryImpl implements ActaRepository {
         .from(SupabaseConstants.actasTable)
         .select()
         .eq('mesa_id', mesaId);
-
     return (resultado as List)
         .map((row) => ActaModel.fromMap(row as Map<String, dynamic>))
         .toList();

@@ -99,18 +99,17 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
           const Icon(Icons.shield_outlined, color: _T.primary, size: 24),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Portal Electoral Seguro',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _T.primary)),
-                  Text('Veedor: ${usuario.nombres} ${usuario.apellidos}',
-                      style: const TextStyle(
-                          fontSize: 11, color: _T.onSurfaceVariant)),
-                ]),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Portal Electoral Seguro',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _T.primary)),
+              Text('Veedor: ${usuario.nombres} ${usuario.apellidos}',
+                  style: const TextStyle(
+                      fontSize: 11, color: _T.onSurfaceVariant)),
+            ]),
           ),
         ]),
         actions: [
@@ -209,8 +208,7 @@ class _IndicadorSync extends ConsumerWidget {
               style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color:
-                      sync.sincronizando ? _T.syncColor : _T.warningColor),
+                  color: sync.sincronizando ? _T.syncColor : _T.warningColor),
             ),
           ]),
         ),
@@ -348,8 +346,7 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
           ),
           onTap: () => setState(() => _expandida = !_expandida),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: _expandida ? _T.brandAccent : Colors.white,
               borderRadius: BorderRadius.vertical(
@@ -398,9 +395,7 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
                   return _Pill(
                     label: completa ? 'Completa' : 'Pendiente',
                     color: completa ? _T.success : _T.warningColor,
-                    bg: completa
-                        ? _T.successContainer
-                        : _T.warningContainer,
+                    bg: completa ? _T.successContainer : _T.warningContainer,
                   );
                 },
               ),
@@ -419,8 +414,8 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
           actasAsync.when(
             loading: () => const Padding(
                 padding: EdgeInsets.all(20),
-                child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2))),
+                child:
+                    Center(child: CircularProgressIndicator(strokeWidth: 2))),
             error: (e, _) => Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text('Error: $e',
@@ -533,35 +528,34 @@ class _RecuadroDignidad extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(etiqueta,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _T.onSurface)),
-                  const SizedBox(height: 3),
-                  Text(
-                    pendienteSync
-                        ? 'Guardada · subiendo al sistema…'
-                        : registrada
-                            ? 'Registrada · toca para ver o corregir'
-                            : 'Pendiente · toca para registrar',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: pendienteSync
-                          ? _T.syncColor
-                          : registrada
-                              ? _T.success
-                              : _T.greyLight,
-                    ),
-                  ),
-                ]),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(etiqueta,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _T.onSurface)),
+              const SizedBox(height: 3),
+              Text(
+                pendienteSync
+                    ? 'Guardada · subiendo al sistema…'
+                    : registrada
+                        ? 'Registrada · toca para ver o corregir'
+                        : 'Pendiente · toca para registrar',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: pendienteSync
+                      ? _T.syncColor
+                      : registrada
+                          ? _T.success
+                          : _T.greyLight,
+                ),
+              ),
+            ]),
           ),
           _BadgeEstado(acta: acta),
           const SizedBox(width: 10),
-          Icon(Icons.chevron_right, color: _T.greyLight, size: 20),
+          const Icon(Icons.chevron_right, color: _T.greyLight, size: 20),
         ]),
       ),
     );
@@ -598,8 +592,7 @@ class _TabActasFiltradas extends ConsumerWidget {
           onRetry: () => ref.invalidate(mesasVeedorProvider(usuario.id)),
         ),
         data: (mesas) => actasAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(
               child: Text('Error: $e',
                   style: const TextStyle(color: _T.errorColor))),
@@ -608,19 +601,18 @@ class _TabActasFiltradas extends ConsumerWidget {
             for (final mesa in mesas) {
               for (final dignidad in [Dignidad.alcalde, Dignidad.prefecto]) {
                 final acta = actas
-                    .where((a) =>
-                        a.mesaId == mesa.id && a.dignidad == dignidad)
+                    .where((a) => a.mesaId == mesa.id && a.dignidad == dignidad)
                     .firstOrNull;
 
                 if (soloCompletas) {
                   if (acta != null && !(acta.pendienteSync)) {
-                    items.add(_ItemActa(
-                        mesa: mesa, dignidad: dignidad, acta: acta));
+                    items.add(
+                        _ItemActa(mesa: mesa, dignidad: dignidad, acta: acta));
                   }
                 } else {
                   if (acta == null || acta.pendienteSync) {
-                    items.add(_ItemActa(
-                        mesa: mesa, dignidad: dignidad, acta: acta));
+                    items.add(
+                        _ItemActa(mesa: mesa, dignidad: dignidad, acta: acta));
                   }
                 }
               }
@@ -656,8 +648,8 @@ class _TabActasFiltradas extends ConsumerWidget {
                             ? 'Las actas registradas y sincronizadas aparecerán aquí.'
                             : 'No tienes actas pendientes por registrar.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 13, color: _T.greyLight),
+                        style:
+                            const TextStyle(fontSize: 13, color: _T.greyLight),
                       ),
                       if (!soloCompletas) ...[
                         const SizedBox(height: 20),
@@ -667,8 +659,8 @@ class _TabActasFiltradas extends ConsumerWidget {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8))),
                           onPressed: onIrAMesas,
-                          icon: const Icon(Icons.how_to_vote_outlined,
-                              size: 16),
+                          icon:
+                              const Icon(Icons.how_to_vote_outlined, size: 16),
                           label: const Text('Ver mis mesas'),
                         ),
                       ],
@@ -682,21 +674,17 @@ class _TabActasFiltradas extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _CardKPI(
-                  label: soloCompletas
-                      ? 'ACTAS COMPLETADAS'
-                      : 'ACTAS PENDIENTES',
+                  label:
+                      soloCompletas ? 'ACTAS COMPLETADAS' : 'ACTAS PENDIENTES',
                   value: '${items.length}',
                   icon: soloCompletas
                       ? Icons.check_circle_outline
                       : Icons.pending_actions_outlined,
-                  valueColor:
-                      soloCompletas ? _T.success : _T.warningColor,
+                  valueColor: soloCompletas ? _T.success : _T.warningColor,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  soloCompletas
-                      ? 'Actas completadas'
-                      : 'Actas pendientes',
+                  soloCompletas ? 'Actas completadas' : 'Actas pendientes',
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -709,8 +697,7 @@ class _TabActasFiltradas extends ConsumerWidget {
                       soloCompleta: soloCompletas,
                       onActualizar: () {
                         ref.invalidate(actasVeedorProvider(usuario.id));
-                        ref.invalidate(
-                            actasPorMesaProvider(item.mesa.id));
+                        ref.invalidate(actasPorMesaProvider(item.mesa.id));
                       },
                     )),
                 const SizedBox(height: 20),
@@ -819,15 +806,15 @@ class _TarjetaActaResumen extends ConsumerWidget {
                     ),
                     if (pendienteSync) ...[
                       const SizedBox(height: 3),
-                      Row(children: [
-                        const SizedBox(
+                      const Row(children: [
+                        SizedBox(
                           width: 10,
                           height: 10,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: _T.syncColor),
                         ),
-                        const SizedBox(width: 5),
-                        const Text('Subiendo al sistema…',
+                        SizedBox(width: 5),
+                        Text('Subiendo al sistema…',
                             style: TextStyle(
                                 fontSize: 11,
                                 color: _T.syncColor,
@@ -836,8 +823,7 @@ class _TarjetaActaResumen extends ConsumerWidget {
                     ] else if (item.acta?.gpsLat != null) ...[
                       const SizedBox(height: 2),
                       const Text('GPS registrado',
-                          style:
-                              TextStyle(fontSize: 11, color: _T.greyLight)),
+                          style: TextStyle(fontSize: 11, color: _T.greyLight)),
                     ],
                   ]),
             ),
@@ -873,8 +859,7 @@ class _CardKPI extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(_T.cardRadius),
           border: Border.all(color: _T.outline)),
-      child:
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(icon, size: 16, color: _T.primary),
           const SizedBox(width: 6),
@@ -940,10 +925,8 @@ class _BadgeEstado extends StatelessWidget {
       return _pill('Subiendo…', _T.syncColor, _T.syncContainer);
     }
     return switch (acta!.estado) {
-      EstadoActa.ingresada =>
-        _pill('Ingresada', _T.primary, _T.brandAccent),
-      EstadoActa.revisada =>
-        _pill('Revisada', _T.success, _T.successContainer),
+      EstadoActa.ingresada => _pill('Ingresada', _T.primary, _T.brandAccent),
+      EstadoActa.revisada => _pill('Revisada', _T.success, _T.successContainer),
       EstadoActa.conNovedad =>
         _pill('Con novedad', _T.errorColor, _T.errorContainer),
     };
@@ -951,8 +934,8 @@ class _BadgeEstado extends StatelessWidget {
 
   Widget _pill(String label, Color color, Color bg) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-            color: bg, borderRadius: BorderRadius.circular(4)),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
         child: Text(label,
             style: TextStyle(
                 fontSize: 10, color: color, fontWeight: FontWeight.bold)),
@@ -964,20 +947,19 @@ class _SinMesasView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child:
-            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.inbox_outlined, size: 64, color: _T.greyLight),
-          const SizedBox(height: 16),
-          const Text('Sin mesas asignadas',
+        padding: EdgeInsets.all(32),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.inbox_outlined, size: 64, color: _T.greyLight),
+          SizedBox(height: 16),
+          Text('Sin mesas asignadas',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: _T.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Contacta al coordinador de recinto para que te asigne una mesa.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: _T.greyLight),
@@ -998,12 +980,10 @@ class _ErrorView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child:
-            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.wifi_off_outlined,
-              size: 48, color: _T.errorColor.withOpacity(0.5)),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.inbox_outlined, size: 64, color: _T.greyLight),
           const SizedBox(height: 16),
-          const Text('Error al cargar mesas',
+          const Text('Sin mesas asignadas',
               style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
