@@ -1,12 +1,5 @@
 // lib/features/auth/presentation/veedor/veedor_panel_screen.dart
-//
-// CAMBIOS vs versión anterior:
-//  1. Tocar el recuadro de mesa → navega directo a ActaFormScreen (sin botones Corregir/Registrar)
-//  2. Sin modales en el panel
-//  3. Actas offline aparecen con badge "Subiendo…" en Pendientes
-//  4. Al reconectar se sincronizan y pasan a Completadas automáticamente
-// ─────────────────────────────────────────────────────────────────────────────
-
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +12,6 @@ import '../controller/login_controller.dart';
 import 'acta_form_screen.dart';
 import 'veedor_providers.dart';
 
-// ═════════════════════════════════════════════════════════════════════════════
-// DESIGN TOKENS
-// ═════════════════════════════════════════════════════════════════════════════
 class _T {
   static const primary = Color(0xFF003EC7);
   static const outline = Color(0xFFE2E8F0);
@@ -37,13 +27,10 @@ class _T {
   static const warningColor = Color(0xFFF59E0B);
   static const warningContainer = Color(0xFFFFFBEB);
   static const brandAccent = Color(0xFFEFF6FF);
-  static const syncColor = Color(0xFF6366F1); // índigo para "subiendo"
+  static const syncColor = Color(0xFF6366F1);
   static const syncContainer = Color(0xFFEEF2FF);
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// PANTALLA PRINCIPAL
-// ═════════════════════════════════════════════════════════════════════════════
 class VeedorPanelScreen extends ConsumerStatefulWidget {
   const VeedorPanelScreen({super.key});
 
@@ -54,14 +41,14 @@ class VeedorPanelScreen extends ConsumerStatefulWidget {
 class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+  StreamSubscription? _connectivitySub;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
 
-    // Escuchar reconexión → sincronizar pendientes y refrescar UI
-    Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       if (!results.contains(ConnectivityResult.none) && mounted) {
         _sincronizarPendientes();
       }
@@ -70,6 +57,7 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
 
   @override
   void dispose() {
+    _connectivitySub?.cancel();
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -77,11 +65,9 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
   Future<void> _sincronizarPendientes() async {
     final usuario = ref.read(usuarioActualProvider);
     if (usuario == null) return;
-    // El controller de sincronización lee de SQLite y sube al backend
     await ref
         .read(syncPendientesProvider.notifier)
         .sincronizarTodos(userId: usuario.id);
-    // Refrescar listas
     ref.invalidate(actasVeedorProvider(usuario.id));
   }
 
@@ -92,7 +78,6 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Escuchar sincronización automática en segundo plano
     ref.listen(syncPendientesProvider, (_, next) {
       if (next.sincronizados > 0) {
         ref.invalidate(actasVeedorProvider(usuario.id));
@@ -114,21 +99,21 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
           const Icon(Icons.shield_outlined, color: _T.primary, size: 24),
           const SizedBox(width: 8),
           Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Portal Electoral Seguro',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _T.primary)),
-              Text('Veedor: ${usuario.nombres} ${usuario.apellidos}',
-                  style: const TextStyle(
-                      fontSize: 11, color: _T.onSurfaceVariant)),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Portal Electoral Seguro',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _T.primary)),
+                  Text('Veedor: ${usuario.nombres} ${usuario.apellidos}',
+                      style: const TextStyle(
+                          fontSize: 11, color: _T.onSurfaceVariant)),
+                ]),
           ),
         ]),
         actions: [
-          // Indicador de sync activo
           _IndicadorSync(),
           IconButton(
             icon: const Icon(Icons.logout_outlined,
@@ -137,7 +122,7 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
             onPressed: () async {
               await ref.read(loginControllerProvider.notifier).logout();
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/');
+                Navigator.of(context).pushReplacementNamed('/login');
               }
             },
           ),
@@ -190,9 +175,6 @@ class _VeedorPanelScreenState extends ConsumerState<VeedorPanelScreen>
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// INDICADOR DE SYNC EN LA APPBAR
-// ═════════════════════════════════════════════════════════════════════════════
 class _IndicadorSync extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -227,7 +209,8 @@ class _IndicadorSync extends ConsumerWidget {
               style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: sync.sincronizando ? _T.syncColor : _T.warningColor),
+                  color:
+                      sync.sincronizando ? _T.syncColor : _T.warningColor),
             ),
           ]),
         ),
@@ -236,11 +219,6 @@ class _IndicadorSync extends ConsumerWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TAB 1 — MESAS
-// Tocar el recuadro de dignidad → navega directo a ActaFormScreen
-// SIN botones, SIN modales
-// ═════════════════════════════════════════════════════════════════════════════
 class _TabMesas extends ConsumerWidget {
   final Usuario usuario;
   const _TabMesas({required this.usuario});
@@ -269,7 +247,6 @@ class _TabMesas extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // KPIs
               actasAsync.when(
                 loading: () => const SizedBox(
                     height: 80,
@@ -340,9 +317,6 @@ class _TabMesas extends ConsumerWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA DE MESA — expandible, recuadros de dignidad son tappables
-// ═════════════════════════════════════════════════════════════════════════════
 class _TarjetaMesa extends ConsumerStatefulWidget {
   final MesaJrv mesa;
   final Usuario usuario;
@@ -367,7 +341,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
           border: Border.all(
               color: _expandida ? _T.primary.withOpacity(0.3) : _T.outline)),
       child: Column(children: [
-        // Cabecera siempre visible — toca para expandir/colapsar
         InkWell(
           borderRadius: BorderRadius.vertical(
             top: const Radius.circular(_T.cardRadius),
@@ -375,7 +348,8 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
           ),
           onTap: () => setState(() => _expandida = !_expandida),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: _expandida ? _T.brandAccent : Colors.white,
               borderRadius: BorderRadius.vertical(
@@ -409,7 +383,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
                               fontSize: 12, color: _T.onSurfaceVariant)),
                     ]),
               ),
-              // Badge resumen
               actasAsync.when(
                 loading: () => const SizedBox(
                     width: 14,
@@ -425,7 +398,9 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
                   return _Pill(
                     label: completa ? 'Completa' : 'Pendiente',
                     color: completa ? _T.success : _T.warningColor,
-                    bg: completa ? _T.successContainer : _T.warningContainer,
+                    bg: completa
+                        ? _T.successContainer
+                        : _T.warningContainer,
                   );
                 },
               ),
@@ -440,14 +415,12 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
             ]),
           ),
         ),
-
-        // Contenido expandido — recuadros de dignidad
         if (_expandida)
           actasAsync.when(
             loading: () => const Padding(
                 padding: EdgeInsets.all(20),
-                child:
-                    Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2))),
             error: (e, _) => Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text('Error: $e',
@@ -462,7 +435,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
 
               return Column(children: [
                 Container(height: 1, color: _T.outline),
-                // ── Recuadro Alcalde: TODO el recuadro es tappable ──
                 _RecuadroDignidad(
                   etiqueta: 'Acta de Alcalde',
                   icono: Icons.location_city_outlined,
@@ -471,7 +443,6 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
                       context, ref, Dignidad.alcalde, actaAlcalde),
                 ),
                 Container(height: 1, color: _T.outline),
-                // ── Recuadro Prefecto: TODO el recuadro es tappable ──
                 _RecuadroDignidad(
                   etiqueta: 'Acta de Prefecto',
                   icono: Icons.account_balance_outlined,
@@ -512,15 +483,11 @@ class _TarjetaMesaState extends ConsumerState<_TarjetaMesa> {
       ),
     );
 
-    // Refrescar al volver
     ref.invalidate(actasPorMesaProvider(widget.mesa.id));
     ref.invalidate(actasVeedorProvider(widget.usuario.id));
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// RECUADRO DE DIGNIDAD — TODO es tappable, sin botones
-// ═════════════════════════════════════════════════════════════════════════════
 class _RecuadroDignidad extends StatelessWidget {
   final String etiqueta;
   final IconData icono;
@@ -544,7 +511,6 @@ class _RecuadroDignidad extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(children: [
-          // Ícono de estado
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -566,56 +532,42 @@ class _RecuadroDignidad extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-
-          // Etiqueta y subtexto
           Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(etiqueta,
-                  style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _T.onSurface)),
-              const SizedBox(height: 3),
-              Text(
-                pendienteSync
-                    ? 'Guardada · subiendo al sistema…'
-                    : registrada
-                        ? 'Registrada · toca para ver o corregir'
-                        : 'Pendiente · toca para registrar',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: pendienteSync
-                      ? _T.syncColor
-                      : registrada
-                          ? _T.success
-                          : _T.greyLight,
-                ),
-              ),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(etiqueta,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _T.onSurface)),
+                  const SizedBox(height: 3),
+                  Text(
+                    pendienteSync
+                        ? 'Guardada · subiendo al sistema…'
+                        : registrada
+                            ? 'Registrada · toca para ver o corregir'
+                            : 'Pendiente · toca para registrar',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: pendienteSync
+                          ? _T.syncColor
+                          : registrada
+                              ? _T.success
+                              : _T.greyLight,
+                    ),
+                  ),
+                ]),
           ),
-
-          // Badge de estado
           _BadgeEstado(acta: acta),
           const SizedBox(width: 10),
-
-          // Chevron → indica que el recuadro es navegable
-          Icon(
-            Icons.chevron_right,
-            color: _T.greyLight,
-            size: 20,
-          ),
+          Icon(Icons.chevron_right, color: _T.greyLight, size: 20),
         ]),
       ),
     );
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TAB 2 y 3 — PENDIENTES / COMPLETADAS
-// Pendientes = sin acta O con acta pendienteSync=true
-// Completadas = acta registrada y sincronizada
-// ═════════════════════════════════════════════════════════════════════════════
 class _TabActasFiltradas extends ConsumerWidget {
   final Usuario usuario;
   final bool soloCompletas;
@@ -646,7 +598,8 @@ class _TabActasFiltradas extends ConsumerWidget {
           onRetry: () => ref.invalidate(mesasVeedorProvider(usuario.id)),
         ),
         data: (mesas) => actasAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(
               child: Text('Error: $e',
                   style: const TextStyle(color: _T.errorColor))),
@@ -655,20 +608,19 @@ class _TabActasFiltradas extends ConsumerWidget {
             for (final mesa in mesas) {
               for (final dignidad in [Dignidad.alcalde, Dignidad.prefecto]) {
                 final acta = actas
-                    .where((a) => a.mesaId == mesa.id && a.dignidad == dignidad)
+                    .where((a) =>
+                        a.mesaId == mesa.id && a.dignidad == dignidad)
                     .firstOrNull;
 
                 if (soloCompletas) {
-                  // Completadas: acta existe Y ya fue sincronizada
                   if (acta != null && !(acta.pendienteSync)) {
-                    items.add(
-                        _ItemActa(mesa: mesa, dignidad: dignidad, acta: acta));
+                    items.add(_ItemActa(
+                        mesa: mesa, dignidad: dignidad, acta: acta));
                   }
                 } else {
-                  // Pendientes: sin acta O acta pendiente de sync
                   if (acta == null || acta.pendienteSync) {
-                    items.add(
-                        _ItemActa(mesa: mesa, dignidad: dignidad, acta: acta));
+                    items.add(_ItemActa(
+                        mesa: mesa, dignidad: dignidad, acta: acta));
                   }
                 }
               }
@@ -704,8 +656,8 @@ class _TabActasFiltradas extends ConsumerWidget {
                             ? 'Las actas registradas y sincronizadas aparecerán aquí.'
                             : 'No tienes actas pendientes por registrar.',
                         textAlign: TextAlign.center,
-                        style:
-                            const TextStyle(fontSize: 13, color: _T.greyLight),
+                        style: const TextStyle(
+                            fontSize: 13, color: _T.greyLight),
                       ),
                       if (!soloCompletas) ...[
                         const SizedBox(height: 20),
@@ -715,8 +667,8 @@ class _TabActasFiltradas extends ConsumerWidget {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8))),
                           onPressed: onIrAMesas,
-                          icon:
-                              const Icon(Icons.how_to_vote_outlined, size: 16),
+                          icon: const Icon(Icons.how_to_vote_outlined,
+                              size: 16),
                           label: const Text('Ver mis mesas'),
                         ),
                       ],
@@ -730,17 +682,21 @@ class _TabActasFiltradas extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _CardKPI(
-                  label:
-                      soloCompletas ? 'ACTAS COMPLETADAS' : 'ACTAS PENDIENTES',
+                  label: soloCompletas
+                      ? 'ACTAS COMPLETADAS'
+                      : 'ACTAS PENDIENTES',
                   value: '${items.length}',
                   icon: soloCompletas
                       ? Icons.check_circle_outline
                       : Icons.pending_actions_outlined,
-                  valueColor: soloCompletas ? _T.success : _T.warningColor,
+                  valueColor:
+                      soloCompletas ? _T.success : _T.warningColor,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  soloCompletas ? 'Actas completadas' : 'Actas pendientes',
+                  soloCompletas
+                      ? 'Actas completadas'
+                      : 'Actas pendientes',
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -753,7 +709,8 @@ class _TabActasFiltradas extends ConsumerWidget {
                       soloCompleta: soloCompletas,
                       onActualizar: () {
                         ref.invalidate(actasVeedorProvider(usuario.id));
-                        ref.invalidate(actasPorMesaProvider(item.mesa.id));
+                        ref.invalidate(
+                            actasPorMesaProvider(item.mesa.id));
                       },
                     )),
                 const SizedBox(height: 20),
@@ -774,9 +731,6 @@ class _ItemActa {
       {required this.mesa, required this.dignidad, required this.acta});
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TARJETA RESUMEN EN TABS — también es tappable (sin botones)
-// ═════════════════════════════════════════════════════════════════════════════
 class _TarjetaActaResumen extends ConsumerWidget {
   final _ItemActa item;
   final Usuario usuario;
@@ -882,7 +836,8 @@ class _TarjetaActaResumen extends ConsumerWidget {
                     ] else if (item.acta?.gpsLat != null) ...[
                       const SizedBox(height: 2),
                       const Text('GPS registrado',
-                          style: TextStyle(fontSize: 11, color: _T.greyLight)),
+                          style:
+                              TextStyle(fontSize: 11, color: _T.greyLight)),
                     ],
                   ]),
             ),
@@ -896,9 +851,6 @@ class _TarjetaActaResumen extends ConsumerWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// WIDGETS AUXILIARES
-// ═════════════════════════════════════════════════════════════════════════════
 class _CardKPI extends StatelessWidget {
   final String label, value;
   final IconData icon;
@@ -921,7 +873,8 @@ class _CardKPI extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(_T.cardRadius),
           border: Border.all(color: _T.outline)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child:
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(icon, size: 16, color: _T.primary),
           const SizedBox(width: 6),
@@ -987,8 +940,10 @@ class _BadgeEstado extends StatelessWidget {
       return _pill('Subiendo…', _T.syncColor, _T.syncContainer);
     }
     return switch (acta!.estado) {
-      EstadoActa.ingresada => _pill('Ingresada', _T.primary, _T.brandAccent),
-      EstadoActa.revisada => _pill('Revisada', _T.success, _T.successContainer),
+      EstadoActa.ingresada =>
+        _pill('Ingresada', _T.primary, _T.brandAccent),
+      EstadoActa.revisada =>
+        _pill('Revisada', _T.success, _T.successContainer),
       EstadoActa.conNovedad =>
         _pill('Con novedad', _T.errorColor, _T.errorContainer),
     };
@@ -996,8 +951,8 @@ class _BadgeEstado extends StatelessWidget {
 
   Widget _pill(String label, Color color, Color bg) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration:
-            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+        decoration: BoxDecoration(
+            color: bg, borderRadius: BorderRadius.circular(4)),
         child: Text(label,
             style: TextStyle(
                 fontSize: 10, color: color, fontWeight: FontWeight.bold)),
@@ -1012,7 +967,8 @@ class _SinMesasView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        child:
+            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.inbox_outlined, size: 64, color: _T.greyLight),
           const SizedBox(height: 16),
           const Text('Sin mesas asignadas',
@@ -1042,7 +998,8 @@ class _ErrorView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        child:
+            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.wifi_off_outlined,
               size: 48, color: _T.errorColor.withOpacity(0.5)),
           const SizedBox(height: 16),

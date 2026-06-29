@@ -1,3 +1,5 @@
+// lib/features/auth/data/repositories/auth_repository_impl.dart
+import 'dart:io' show SocketException;
 import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/supabase_constants.dart';
@@ -59,9 +61,20 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e, st) {
       print('💥 Error inesperado: $e');
       print('📍 StackTrace: $st');
-      try {
-        await _supabase.auth.signOut();
-      } catch (_) {}
+
+      final esErrorDeRed = e is SocketException ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('network') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('TimeoutException');
+
+      if (!esErrorDeRed) {
+        try {
+          await _supabase.auth.signOut();
+        } catch (_) {}
+      }
+
       return Left(ServerFailure('Error inesperado: ${e.toString()}'));
     }
   }
