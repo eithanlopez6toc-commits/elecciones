@@ -3,10 +3,10 @@
 // CAMBIOS vs versión anterior:
 //  1. Foto SIEMPRE horizontal (corrección EXIF con paquete image)
 //  2. Foto completa (BoxFit.contain) + toque para agrandar (InteractiveViewer)
-//  3. Guardar → Diálogo éxito → [Aceptar] → Vista previa + botón "Actualizar acta"
+//  3. Guardar → Diálogo éxito → [Aceptar] → vuelve al formulario (SIN vista previa)
 //  4. GPS: mapa OSM con marcador (flutter_map) + coordenadas en texto
 //  5. GPS desactivado → diálogo "Activar GPS"; sin permiso → diálogo "Otorgar permisos"
-//  6. Votos superan límite → diálogo de error y bloqueo del guardado
+//  6. Votos deben ser EXACTOS al total de sufragantes (ver acta_form_controller.dart)
 //  7. Persistencia offline con sqflite + sync automático al reconectar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,10 +75,8 @@ Future<File> _corregirRotacionFoto(XFile xfile) async {
   final original = img.decodeImage(bytes);
   if (original == null) return File(xfile.path);
 
-  // bakeOrientation aplica la rotación EXIF y la elimina del metadata
   img.Image corregida = img.bakeOrientation(original);
 
-  // Si la imagen queda vertical (portrait), rotar 90° para forzar landscape
   if (corregida.height > corregida.width) {
     corregida = img.copyRotate(corregida, angle: 90);
   }
@@ -240,7 +238,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'El total de votos no puede superar el total de sufragantes de la mesa.',
+                    'El total de votos debe coincidir exactamente con el total de sufragantes de la mesa.',
                     style: TextStyle(fontSize: 11, color: _T.warningColor),
                   ),
                 ),
@@ -265,7 +263,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
 
   // ── Cámara: verificar GPS y permisos antes de abrir ──────────────────────
   Future<void> _abrirCamara() async {
-    // 1. Verificar permiso de ubicación
     var locationStatus = await Permission.locationWhenInUse.status;
 
     if (locationStatus.isDenied) {
@@ -313,7 +310,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
               onPressed: () async {
                 Navigator.of(context).pop();
                 if (locationStatus.isPermanentlyDenied) {
-                  // Abre configuración del sistema
                   await openAppSettings();
                 } else {
                   await Permission.locationWhenInUse.request();
@@ -327,7 +323,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
       return;
     }
 
-    // 2. Verificar si el servicio GPS está activado
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (!mounted) return;
@@ -379,7 +374,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
       return;
     }
 
-    // 3. Verificar permiso de cámara
     final camStatus = await Permission.camera.request();
     if (!camStatus.isGranted) {
       if (mounted) {
@@ -395,22 +389,17 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
     final cameras = await availableCameras();
     if (cameras.isEmpty || !mounted) return;
 
-    // 4. Abrir cámara
     final xfile = await Navigator.of(context).push<XFile>(
       MaterialPageRoute(
           builder: (_) => _CameraCapturePage(camera: cameras.first)),
     );
 
-    // 5. Procesar foto: corregir rotación y capturar GPS
     if (xfile != null && mounted) {
-      // Mostrar spinner en estado
       ref.read(actaFormProvider(_args).notifier).setProcesandoFoto(true);
 
       try {
-        // Corregir rotación EXIF → siempre landscape
         final fileCorregido = await _corregirRotacionFoto(xfile);
 
-        // Procesar en el controller (GPS + guardar en estado)
         await ref
             .read(actaFormProvider(_args).notifier)
             .procesarFotoDesdeCamera(XFile(fileCorregido.path));
@@ -430,8 +419,9 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
   Future<void> _guardar() async {
     final state = ref.read(actaFormProvider(_args));
 
-    // BLOQUEO: votos superan el límite → diálogo de error
+    // BLOQUEO: votos no coinciden exactamente con sufragantes
     if (!state.esConsistente) {
+      final diferencia = state.totalSufragantes - state.totalContabilizado;
       await showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -449,9 +439,12 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
             ),
           ]),
           content: Text(
-            'El total de votos contabilizados (${state.totalContabilizado}) '
-            'supera el total de sufragantes de la mesa (${state.totalSufragantes}).\n\n'
-            'Corrige los valores ingresados antes de registrar el acta.',
+            diferencia > 0
+                ? 'Faltan $diferencia votos para llegar al total de sufragantes '
+                    '(${state.totalSufragantes}). El total contabilizado debe ser exacto.'
+                : 'El total de votos contabilizados (${state.totalContabilizado}) '
+                    'supera el total de sufragantes de la mesa (${state.totalSufragantes}) '
+                    'por ${-diferencia}.\n\nEl total debe coincidir exactamente.',
             style: const TextStyle(fontSize: 13, color: _T.onSurface),
           ),
           actions: [
@@ -468,17 +461,17 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           ],
         ),
       );
-      return; // NO continúa con el guardado
+      return;
     }
 
-    // Guardar
     await ref
         .read(actaFormProvider(_args).notifier)
         .guardarActa(userId: widget.userId);
 
     final stateActualizado = ref.read(actaFormProvider(_args));
     if (stateActualizado.guardadoExito && mounted) {
-      // Paso 1: diálogo de ÉXITO
+      // Diálogo de ÉXITO — al aceptar, vuelve directo al formulario actualizado
+      // (sin vista previa intermedia).
       await showDialog(
         context: context,
         barrierDismissible: false,
@@ -543,7 +536,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
-              // Cerrar diálogo → luego se muestra vista previa
+              // Cierra el diálogo y se queda en ActaFormScreen,
+              // ya con los datos actualizados y el botón "Actualizar acta" visible.
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Aceptar',
                   style: TextStyle(fontWeight: FontWeight.w600)),
@@ -551,29 +545,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           ],
         ),
       );
-
-      // Paso 2: vista previa (el usuario sigue en la pantalla)
-      if (mounted) await _mostrarVistaPrevia(stateActualizado);
     }
-  }
-
-  // ── Vista previa post-guardado (dialog) ───────────────────────────────────
-  Future<void> _mostrarVistaPrevia(ActaFormState state) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (_) => _DialogVistaPrevia(
-        state: state,
-        organizaciones: widget.organizaciones,
-        mesaNombre: widget.mesaNombre,
-        recintoNombre: widget.recintoNombre,
-        dignidad: widget.dignidad.etiqueta,
-        pendienteSync: state.pendienteSync,
-        // Solo cierra el diálogo — el usuario queda en ActaFormScreen
-        // y puede pulsar "Actualizar acta"
-        onCerrar: () => Navigator.of(context).pop(),
-      ),
-    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -653,7 +625,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
-          // Banner offline
           if (state.pendienteSync) ...[
             _BannerOffline(
               onReintentarSync: () => ref
@@ -715,9 +686,7 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Botón principal (solo cuando es editable)
           if (_editable) ...[
-            // Aviso visual si votos superan el límite (además del diálogo)
             if (!state.esConsistente) ...[
               Container(
                 padding:
@@ -733,8 +702,8 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'No puedes guardar: los votos (${state.totalContabilizado}) '
-                      'superan los sufragantes (${state.totalSufragantes}).',
+                      'No puedes guardar: el total debe ser exactamente '
+                      '${state.totalSufragantes} votos (actualmente ${state.totalContabilizado}).',
                       style:
                           const TextStyle(fontSize: 12, color: _T.errorColor),
                     ),
@@ -745,7 +714,6 @@ class _ActaFormScreenState extends ConsumerState<ActaFormScreen> {
 
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                // Botón gris si hay inconsistencia (visual de bloqueo)
                 backgroundColor:
                     !state.esConsistente ? _T.greyLight : _T.primary,
                 minimumSize: const Size.fromHeight(50),
@@ -978,14 +946,13 @@ class _CardVotos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final superanLimite = !state.esConsistente;
+    final inconsistente = !state.esConsistente;
 
     return _Seccion(
       titulo: 'Votos por organización política',
       icono: Icons.how_to_vote_outlined,
       child: Column(children: [
-        // Alerta en tiempo real cuando se supera el límite
-        if (superanLimite)
+        if (inconsistente)
           Container(
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(10),
@@ -1000,8 +967,8 @@ class _CardVotos extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Los votos (${state.totalContabilizado}) superan el total de sufragantes (${state.totalSufragantes}). '
-                  'Revisa los valores ingresados.',
+                  'El total debe ser exactamente ${state.totalSufragantes} votos '
+                  '(actualmente ${state.totalContabilizado}).',
                   style: const TextStyle(fontSize: 12, color: _T.errorColor),
                 ),
               ),
@@ -1163,9 +1130,6 @@ class _BadgeConsistencia extends StatelessWidget {
 
 // ═════════════════════════════════════════════════════════════════════════════
 // TARJETA: FOTO
-// - BoxFit.contain (foto completa)
-// - Spinner mientras procesa
-// - Toque para agrandar con InteractiveViewer
 // ═════════════════════════════════════════════════════════════════════════════
 class _CardFoto extends StatelessWidget {
   final File? fotoFile;
@@ -1224,7 +1188,6 @@ class _CardFoto extends StatelessWidget {
       titulo: 'Fotografía del acta física',
       icono: Icons.camera_alt_outlined,
       child: Column(children: [
-        // Spinner mientras se procesa la foto
         if (procesandoFoto)
           Container(
             height: 180,
@@ -1245,8 +1208,6 @@ class _CardFoto extends StatelessWidget {
               ),
             ),
           )
-
-        // Nueva foto tomada
         else if (tieneNuevaFoto) ...[
           GestureDetector(
             onTap: () => _verFotoCompleta(
@@ -1296,10 +1257,7 @@ class _CardFoto extends StatelessWidget {
               label: const Text('Retomar foto'),
             ),
           ],
-        ]
-
-        // Foto existente (edición)
-        else if (tieneFotoExistente) ...[
+        ] else if (tieneFotoExistente) ...[
           GestureDetector(
             onTap: () => _verFotoCompleta(
               context,
@@ -1377,10 +1335,7 @@ class _CardFoto extends StatelessWidget {
               label: const Text('Reemplazar foto'),
             ),
           ],
-        ]
-
-        // Sin foto
-        else if (editable)
+        ] else if (editable)
           GestureDetector(
             onTap: onTomarFoto,
             child: Container(
@@ -1435,7 +1390,6 @@ class _CardGps extends StatelessWidget {
       titulo: 'Ubicación GPS',
       icono: Icons.gps_fixed,
       child: Column(children: [
-        // Estado chip
         Container(
           padding: const EdgeInsets.all(10),
           margin: const EdgeInsets.only(bottom: 10),
@@ -1483,7 +1437,6 @@ class _CardGps extends StatelessWidget {
           ]),
         ),
 
-        // Coordenadas en texto
         Row(children: [
           Expanded(
               child: _Campo(
@@ -1498,7 +1451,6 @@ class _CardGps extends StatelessWidget {
                   disabled: true)),
         ]),
 
-        // Mapa OSM con marcador (solo cuando hay GPS)
         if (tieneGps) ...[
           const SizedBox(height: 12),
           ClipRRect(
@@ -1509,7 +1461,6 @@ class _CardGps extends StatelessWidget {
                 options: MapOptions(
                   initialCenter: LatLng(lat!, lng!),
                   initialZoom: 15.0,
-                  // Mapa estático (sin gestos)
                   interactionOptions: const InteractionOptions(
                     flags: InteractiveFlag.none,
                   ),
@@ -1549,256 +1500,6 @@ class _CardGps extends StatelessWidget {
             ),
           ),
         ]),
-      ]),
-    );
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// DIALOG: VISTA PREVIA POST-GUARDADO
-// El usuario cierra este diálogo y queda en ActaFormScreen
-// donde puede pulsar "Actualizar acta" libremente.
-// ═════════════════════════════════════════════════════════════════════════════
-class _DialogVistaPrevia extends StatelessWidget {
-  final ActaFormState state;
-  final List<OrganizacionPolitica> organizaciones;
-  final String mesaNombre, recintoNombre, dignidad;
-  final bool pendienteSync;
-  final VoidCallback onCerrar;
-
-  const _DialogVistaPrevia({
-    required this.state,
-    required this.organizaciones,
-    required this.mesaNombre,
-    required this.recintoNombre,
-    required this.dignidad,
-    required this.pendienteSync,
-    required this.onCerrar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cabecera
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color:
-                      pendienteSync ? _T.warningContainer : _T.successContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  pendienteSync ? Icons.cloud_off : Icons.check_circle_outline,
-                  color: pendienteSync ? _T.warningColor : _T.success,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        pendienteSync
-                            ? 'Vista previa — pendiente de sync'
-                            : 'Vista previa del acta registrada',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: pendienteSync ? _T.warningColor : _T.success,
-                        ),
-                      ),
-                      if (pendienteSync)
-                        const Text('Se enviará cuando haya conexión a internet',
-                            style:
-                                TextStyle(fontSize: 11, color: _T.greyLight)),
-                    ]),
-              ),
-            ]),
-
-            const SizedBox(height: 16),
-            const Divider(color: _T.outline),
-            const SizedBox(height: 12),
-
-            _filaPrevia('Recinto', recintoNombre),
-            _filaPrevia('Mesa / JRV', mesaNombre),
-            _filaPrevia('Dignidad', dignidad),
-            _filaPrevia('Total sufragantes', state.totalSufragantes.toString()),
-
-            const SizedBox(height: 8),
-            const Text('Votos por organización:',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _T.onSurfaceVariant)),
-            const SizedBox(height: 4),
-
-            ...organizaciones.map((org) {
-              final votos = state.votosPorOrganizacion[org.id] ?? 0;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                          child: Text('${org.listaNumero}. ${org.nombre}',
-                              style: const TextStyle(
-                                  fontSize: 12, color: _T.onSurface),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis)),
-                      const SizedBox(width: 8),
-                      Text(votos.toString(),
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _T.primary)),
-                    ]),
-              );
-            }),
-
-            const SizedBox(height: 6),
-            _filaPrevia('Votos nulos', state.votosNulos.toString()),
-            _filaPrevia('Votos blancos', state.votosBlancos.toString()),
-            _filaPrevia(
-              'Total contabilizado',
-              '${state.totalContabilizado} / ${state.totalSufragantes}',
-              valueColor: state.esConsistente ? _T.success : _T.errorColor,
-            ),
-
-            if (state.gpsLat != null) ...[
-              const SizedBox(height: 4),
-              _filaPrevia(
-                'GPS',
-                '${state.gpsLat!.toStringAsFixed(5)}, ${state.gpsLng!.toStringAsFixed(5)}',
-              ),
-              // Mini mapa en la vista previa
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  height: 130,
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(state.gpsLat!, state.gpsLng!),
-                      initialZoom: 15.0,
-                      interactionOptions: const InteractionOptions(
-                        flags: InteractiveFlag.none,
-                      ),
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.tuapp.veedor',
-                      ),
-                      MarkerLayer(markers: [
-                        Marker(
-                          point: LatLng(state.gpsLat!, state.gpsLng!),
-                          width: 36,
-                          height: 36,
-                          child: const Icon(Icons.location_pin,
-                              color: Colors.red, size: 36),
-                        ),
-                      ]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            if (state.fotoFile != null) ...[
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => Dialog(
-                    backgroundColor: Colors.black,
-                    insetPadding: EdgeInsets.zero,
-                    child: InteractiveViewer(
-                      child: Image.file(state.fotoFile!, fit: BoxFit.contain),
-                    ),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(children: [
-                    Image.file(
-                      state.fotoFile!,
-                      height: 140,
-                      width: double.infinity,
-                      fit: BoxFit.contain,
-                    ),
-                    Positioned(
-                      bottom: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(4)),
-                        child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.zoom_in,
-                                  color: Colors.white, size: 11),
-                              SizedBox(width: 3),
-                              Text('Ampliar',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 10)),
-                            ]),
-                      ),
-                    ),
-                  ]),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _T.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                // Solo cierra el diálogo, NO navega hacia atrás
-                // El usuario queda en ActaFormScreen y puede actualizar
-                onPressed: onCerrar,
-                child: const Text('Cerrar vista previa',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filaPrevia(String label, String valor, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: _T.onSurfaceVariant)),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(valor,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor ?? _T.onSurface)),
-        ),
       ]),
     );
   }
@@ -1984,8 +1685,6 @@ class _CameraCapturePageState extends State<_CameraCapturePage> {
           }
           return Stack(children: [
             Center(child: CameraPreview(_controller)),
-
-            // Aviso GPS al usuario
             Positioned(
               top: 12,
               left: 0,
@@ -2007,8 +1706,6 @@ class _CameraCapturePageState extends State<_CameraCapturePage> {
                 ),
               ),
             ),
-
-            // Botón de captura
             Positioned(
               bottom: 32,
               left: 0,

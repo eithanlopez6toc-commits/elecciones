@@ -7,9 +7,6 @@ import '../../domain/entities/recinto.dart';
 import '../controller/login_controller.dart';
 import 'coordinador_provincial_providers.dart';
 
-// ═════════════════════════════════════════════════════════════════════════════
-// DESIGN SYSTEM — Portal Electoral Seguro
-// ═════════════════════════════════════════════════════════════════════════════
 class _Tema {
   static const primary = Color(0xFF003EC7);
   static const outline = Color(0xFFE2E8F0);
@@ -27,47 +24,124 @@ class _Tema {
   static const brandAccent = Color(0xFFEFF6FF);
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// VALIDADOR DE CÉDULA ECUATORIANA
-// ═════════════════════════════════════════════════════════════════════════════
 class CedulaValidator {
   static bool isValid(String cedula) {
     final sanitized = cedula.trim();
     if (!RegExp(r'^\d{10}$').hasMatch(sanitized)) return false;
-
     final digits = sanitized.split('').map(int.parse).toList();
     final province = int.parse(sanitized.substring(0, 2));
     if (province < 1 || province > 24) return false;
-
     final lastDigit = digits[9];
     int sum = 0;
     for (var i = 0; i < 9; i++) {
       final value = digits[i] * (i % 2 == 0 ? 2 : 1);
       sum += value > 9 ? value - 9 : value;
     }
-
-    final validator = (10 - (sum % 10)) % 10;
-    return validator == lastDigit;
+    return ((10 - (sum % 10)) % 10) == lastDigit;
   }
 
   static String? validate(String? cedula) {
-    final sanitized = cedula?.trim();
-    if (sanitized == null || sanitized.isEmpty)
-      return 'La cédula es obligatoria';
-    if (sanitized.length != 10) {
-      return 'Debe tener 10 dígitos (ingresaste ${sanitized.length})';
-    }
-    if (!isValid(sanitized)) return 'Cédula ecuatoriana no válida';
+    final s = cedula?.trim();
+    if (s == null || s.isEmpty) return 'La cédula es obligatoria';
+    if (s.length != 10) return 'Debe tener 10 dígitos';
+    if (!isValid(s)) return 'Cédula ecuatoriana no válida';
     return null;
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+void _mostrarExitoDialog(BuildContext context, String mensaje,
+    {VoidCallback? onClose}) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_Tema.cardRadius)),
+      title: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+              color: _Tema.successContainer,
+              borderRadius: BorderRadius.circular(8)),
+          child: const Icon(Icons.check_circle_outline,
+              color: _Tema.success, size: 22),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+            child: Text('Operación exitosa',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _Tema.onSurface))),
+      ]),
+      content: Text(mensaje,
+          style: const TextStyle(
+              fontSize: 13, color: _Tema.onSurfaceVariant, height: 1.4)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(
+              backgroundColor: _Tema.success,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8))),
+          onPressed: () {
+            Navigator.pop(ctx);
+            onClose?.call();
+          },
+          child:
+              const Text('Continuar', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+void _mostrarErrorDialog(BuildContext context, String mensaje) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_Tema.cardRadius)),
+      title: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+              color: _Tema.errorContainer,
+              borderRadius: BorderRadius.circular(8)),
+          child: const Icon(Icons.error_outline,
+              color: _Tema.errorColor, size: 22),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(
+            child: Text('Ocurrió un error',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _Tema.onSurface))),
+      ]),
+      content: Text(mensaje,
+          style: const TextStyle(
+              fontSize: 13, color: _Tema.onSurfaceVariant, height: 1.4)),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(
+              backgroundColor: _Tema.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8))),
+          onPressed: () => Navigator.pop(ctx),
+          child:
+              const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PANTALLA PRINCIPAL
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 class CoordinadorProvincialPanelScreen extends ConsumerStatefulWidget {
   const CoordinadorProvincialPanelScreen({super.key});
-
   @override
   ConsumerState<CoordinadorProvincialPanelScreen> createState() =>
       _CoordinadorProvincialPanelScreenState();
@@ -95,7 +169,6 @@ class _CoordinadorProvincialPanelScreenState
   @override
   Widget build(BuildContext context) {
     final usuario = ref.watch(usuarioActualProvider);
-
     return Scaffold(
       backgroundColor: _Tema.background,
       appBar: AppBar(
@@ -106,28 +179,25 @@ class _CoordinadorProvincialPanelScreenState
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: _Tema.outline, height: 1.0),
         ),
-        title: Row(
-          children: [
-            const Icon(Icons.shield_outlined, color: _Tema.primary, size: 24),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Portal Electoral Seguro',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _Tema.primary)),
-                  if (usuario != null)
-                    Text('Coordinador: ${usuario.nombres} ${usuario.apellidos}',
-                        style: const TextStyle(
-                            fontSize: 11, color: _Tema.onSurfaceVariant)),
-                ],
-              ),
-            ),
-          ],
-        ),
+        title: Row(children: [
+          const Icon(Icons.shield_outlined, color: _Tema.primary, size: 24),
+          const SizedBox(width: 8),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Portal Electoral Seguro',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _Tema.primary)),
+              if (usuario != null)
+                Text(
+                    'Coordinador: ${usuario.nombres} ${usuario.apellidos}',
+                    style: const TextStyle(
+                        fontSize: 11, color: _Tema.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_outlined,
@@ -141,55 +211,49 @@ class _CoordinadorProvincialPanelScreenState
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabCtrl,
-              indicatorColor: _Tema.primary,
-              indicatorWeight: 3,
-              labelColor: _Tema.primary,
-              unselectedLabelColor: _Tema.onSurfaceVariant,
-              labelStyle:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(
-                    icon: Icon(Icons.location_city_outlined, size: 20),
-                    text: 'Inicio'),
-                Tab(
-                    icon: Icon(Icons.bar_chart_outlined, size: 20),
-                    text: 'Actas'),
-                Tab(icon: Icon(Icons.people_outline, size: 20), text: 'Coordinadores'),
-              ],
-            ),
+      body: Column(children: [
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabCtrl,
+            indicatorColor: _Tema.primary,
+            indicatorWeight: 3,
+            labelColor: _Tema.primary,
+            unselectedLabelColor: _Tema.onSurfaceVariant,
+            labelStyle:
+                const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            tabs: const [
+              Tab(icon: Icon(Icons.location_city_outlined, size: 20), text: 'Inicio'),
+              Tab(icon: Icon(Icons.bar_chart_outlined, size: 20), text: 'Actas'),
+              Tab(icon: Icon(Icons.people_outline, size: 20), text: 'Coordinadores'),
+            ],
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabCtrl,
-              children: [
-                _TabRecintos(
-                  onCrear: () => _dialogCrearRecinto(context),
-                  onCrearCoordinador: () => _dialogCrearCoordinador(context),
-                ),
-                _TabDashboard(
-                  filtroDigidad: _dignidadFiltro,
-                  filtroRecinto: _recintoFiltro,
-                  onFiltroDigidadChanged: (v) =>
-                      setState(() => _dignidadFiltro = v),
-                  onFiltroRecintoChanged: (v) =>
-                      setState(() => _recintoFiltro = v),
-                ),
-                const _TabCoordinadores(),
-              ],
-            ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabCtrl,
+            children: [
+              _TabRecintos(
+                onCrear: () => _dialogCrearRecinto(context),
+                onCrearCoordinador: () => _dialogCrearCoordinador(context),
+              ),
+              _TabDashboard(
+                filtroDigidad: _dignidadFiltro,
+                filtroRecinto: _recintoFiltro,
+                onFiltroDigidadChanged: (v) =>
+                    setState(() => _dignidadFiltro = v),
+                onFiltroRecintoChanged: (v) =>
+                    setState(() => _recintoFiltro = v),
+              ),
+              const _TabCoordinadores(),
+            ],
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 
-  // ── Diálogo crear recinto (Estilo screen.png) ─────────────────────────────
+  // ── Diálogo crear recinto ────────────────────────────────────
   void _dialogCrearRecinto(BuildContext context) {
     final ctrlNombre = TextEditingController();
     final ctrlCanton = TextEditingController();
@@ -208,8 +272,8 @@ class _CoordinadorProvincialPanelScreenState
         initialChildSize: 0.85,
         maxChildSize: 0.95,
         expand: false,
-        builder: (_, scrollController) => ListView(
-          controller: scrollController,
+        builder: (_, sc) => ListView(
+          controller: sc,
           padding: const EdgeInsets.all(24),
           children: [
             const Center(
@@ -222,11 +286,6 @@ class _CoordinadorProvincialPanelScreenState
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: _Tema.onSurface)),
-            const SizedBox(height: 8),
-            const Text(
-                'Monitoreo en tiempo real de la infraestructura de votación.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
             const SizedBox(height: 24),
             Form(
               key: formKey,
@@ -236,41 +295,39 @@ class _CoordinadorProvincialPanelScreenState
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(_Tema.cardRadius),
                     border: Border.all(color: _Tema.outline)),
-                child: Column(
-                  children: [
-                    _CampoForm(
-                        ctrl: ctrlNombre,
-                        label: 'Nombre del recinto',
-                        icono: Icons.business_outlined,
-                        hint: 'Ej: Unidad Educativa del Milenio'),
-                    const SizedBox(height: 16),
-                    _CampoForm(
-                        ctrl: ctrlCanton,
-                        label: 'Cantón',
-                        icono: Icons.map_outlined,
-                        hint: 'Ej: Quito'),
-                    const SizedBox(height: 16),
-                    _CampoForm(
-                        ctrl: ctrlParroquia,
-                        label: 'Parroquia',
-                        icono: Icons.gite_outlined,
-                        hint: 'Ej: Belisario Quevedo'),
-                    const SizedBox(height: 16),
-                    _CampoForm(
-                        ctrl: ctrlNumJRV,
-                        label: 'Número de JRV / mesas',
-                        icono: Icons.pin_outlined,
-                        hint: 'Ej: 42',
-                        digitsOnly: true),
-                    const SizedBox(height: 16),
-                    _CampoForm(
-                        ctrl: ctrlDireccion,
-                        label: 'Dirección (opcional)',
-                        icono: Icons.place_outlined,
-                        hint: 'Ej: Av. Amazonas N32',
-                        required: false),
-                  ],
-                ),
+                child: Column(children: [
+                  _CampoForm(
+                      ctrl: ctrlNombre,
+                      label: 'Nombre del recinto',
+                      icono: Icons.business_outlined,
+                      hint: 'Ej: Unidad Educativa del Milenio'),
+                  const SizedBox(height: 16),
+                  _CampoForm(
+                      ctrl: ctrlCanton,
+                      label: 'Cantón',
+                      icono: Icons.map_outlined,
+                      hint: 'Ej: Quito'),
+                  const SizedBox(height: 16),
+                  _CampoForm(
+                      ctrl: ctrlParroquia,
+                      label: 'Parroquia',
+                      icono: Icons.gite_outlined,
+                      hint: 'Ej: Belisario Quevedo'),
+                  const SizedBox(height: 16),
+                  _CampoForm(
+                      ctrl: ctrlNumJRV,
+                      label: 'Número de JRV / mesas',
+                      icono: Icons.pin_outlined,
+                      hint: 'Ej: 42',
+                      digitsOnly: true),
+                  const SizedBox(height: 16),
+                  _CampoForm(
+                      ctrl: ctrlDireccion,
+                      label: 'Dirección (opcional)',
+                      icono: Icons.place_outlined,
+                      hint: 'Ej: Av. Amazonas N32',
+                      required: false),
+                ]),
               ),
             ),
             const SizedBox(height: 24),
@@ -295,16 +352,11 @@ class _CoordinadorProvincialPanelScreenState
                   ref.invalidate(todosLosRecintosProvider);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Recinto creado correctamente'),
-                        backgroundColor: _Tema.success));
+                    _mostrarExitoDialog(context,
+                        'Recinto creado correctamente y mesas generadas.');
                   }
                 } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: _Tema.errorColor));
-                  }
+                  if (ctx.mounted) _mostrarErrorDialog(ctx, 'Error: $e');
                 }
               },
               child: const Row(
@@ -313,7 +365,7 @@ class _CoordinadorProvincialPanelScreenState
                     Icon(Icons.save_outlined, size: 18),
                     SizedBox(width: 8),
                     Text('Guardar y Registrar',
-                        style: TextStyle(fontWeight: FontWeight.bold))
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ]),
             ),
             const SizedBox(height: 8),
@@ -334,7 +386,7 @@ class _CoordinadorProvincialPanelScreenState
     );
   }
 
-  // ── Diálogo crear coordinador (Fiel reflejo de screen.png) ────────────────
+  // ── Diálogo crear coordinador ────────────────────────────────
   void _dialogCrearCoordinador(BuildContext context) {
     final ctrlCedula = TextEditingController();
     final ctrlNombre = TextEditingController();
@@ -357,8 +409,8 @@ class _CoordinadorProvincialPanelScreenState
             initialChildSize: 0.9,
             maxChildSize: 0.95,
             expand: false,
-            builder: (_, scrollController) => ListView(
-              controller: scrollController,
+            builder: (_, sc) => ListView(
+              controller: sc,
               padding: const EdgeInsets.all(24),
               children: [
                 const Center(
@@ -373,10 +425,9 @@ class _CoordinadorProvincialPanelScreenState
                         color: _Tema.onSurface)),
                 const SizedBox(height: 8),
                 const Text(
-                    'Complete los datos institucionales para dar de alta al nuevo responsable electoral en el sistema.',
+                    'Complete los datos para registrar al nuevo coordinador.',
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
+                    style: TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant)),
                 const SizedBox(height: 24),
                 Form(
                   key: formKey,
@@ -387,52 +438,51 @@ class _CoordinadorProvincialPanelScreenState
                         borderRadius: BorderRadius.circular(_Tema.cardRadius),
                         border: Border.all(color: _Tema.outline)),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _CampoForm(
-                            ctrl: ctrlCedula,
-                            label: 'Cédula de Identidad',
-                            icono: Icons.badge_outlined,
-                            hint: 'Ej: 0000000000 (10 dígitos)',
-                            digitsOnly: true,
-                            maxLength: 10,
-                            validator: CedulaValidator.validate),
-                        const SizedBox(height: 16),
-                        _CampoForm(
-                            ctrl: ctrlNombre,
-                            label: 'Nombres Completos',
-                            icono: Icons.person_outline,
-                            hint: 'Ej: Juan Antonio',
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Obligatorio'
-                                : null),
-                        const SizedBox(height: 16),
-                        _CampoForm(
-                            ctrl: ctrlApellido,
-                            label: 'Apellidos Completos',
-                            icono: Icons.person_outline,
-                            hint: 'Ej: Pérez García',
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Obligatorio'
-                                : null),
-                        const SizedBox(height: 16),
-                        _CampoForm(
-                            ctrl: ctrlTelefono,
-                            label: 'Teléfono de Contacto',
-                            icono: Icons.phone_outlined,
-                            hint: 'Ej: 0999999999',
-                            digitsOnly: true,
-                            maxLength: 10),
-                        const SizedBox(height: 16),
-                        _CampoForm(
-                            ctrl: ctrlCorreo,
-                            label: 'Correo Electrónico',
-                            icono: Icons.mail_outline,
-                            hint: 'usuario@autoridad.gob',
-                            keyboard: TextInputType.emailAddress),
-                        const SizedBox(height: 16),
-                        const Row(
-                          children: [
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _CampoForm(
+                              ctrl: ctrlCedula,
+                              label: 'Cédula de Identidad',
+                              icono: Icons.badge_outlined,
+                              hint: '0000000000',
+                              digitsOnly: true,
+                              maxLength: 10,
+                              validator: CedulaValidator.validate),
+                          const SizedBox(height: 16),
+                          _CampoForm(
+                              ctrl: ctrlNombre,
+                              label: 'Nombres Completos',
+                              icono: Icons.person_outline,
+                              hint: 'Ej: Juan Antonio',
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Obligatorio'
+                                  : null),
+                          const SizedBox(height: 16),
+                          _CampoForm(
+                              ctrl: ctrlApellido,
+                              label: 'Apellidos Completos',
+                              icono: Icons.person_outline,
+                              hint: 'Ej: Pérez García',
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Obligatorio'
+                                  : null),
+                          const SizedBox(height: 16),
+                          _CampoForm(
+                              ctrl: ctrlTelefono,
+                              label: 'Teléfono',
+                              icono: Icons.phone_outlined,
+                              hint: '0999999999',
+                              digitsOnly: true,
+                              maxLength: 10),
+                          const SizedBox(height: 16),
+                          _CampoForm(
+                              ctrl: ctrlCorreo,
+                              label: 'Correo Electrónico',
+                              icono: Icons.mail_outline,
+                              hint: 'usuario@correo.com',
+                              keyboard: TextInputType.emailAddress),
+                          const SizedBox(height: 16),
+                          const Row(children: [
                             Icon(Icons.business_outlined,
                                 size: 16, color: _Tema.onSurfaceVariant),
                             SizedBox(width: 6),
@@ -441,71 +491,94 @@ class _CoordinadorProvincialPanelScreenState
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: _Tema.onSurfaceVariant)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        recintosAsync.when(
-                          loading: () => const LinearProgressIndicator(),
-                          error: (e, _) => Text('Error: $e'),
-                          data: (recintos) => DropdownButtonFormField<int>(
-                            value: recintoIdSeleccionado,
-                            hint: const Text('Seleccione un recinto...',
-                                style: TextStyle(fontSize: 13)),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 12),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide:
-                                      const BorderSide(color: _Tema.outline)),
-                              enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide:
-                                      const BorderSide(color: _Tema.outline)),
-                            ),
-                            items: recintos
-                                .map((r) => DropdownMenuItem(
-                                    value: r.id,
-                                    child: Text(r.nombre,
-                                        style: const TextStyle(fontSize: 13))))
-                                .toList(),
-                            onChanged: (v) =>
-                                setS(() => recintoIdSeleccionado = v),
-                            validator: (v) => v == null
-                                ? 'Por favor asigne un recinto'
-                                : null,
+                          ]),
+                          const SizedBox(height: 6),
+                          recintosAsync.when(
+                            loading: () => const LinearProgressIndicator(),
+                            error: (e, _) => Text('Error: $e'),
+                            data: (recintos) {
+                              final recintosAsync2 =
+                                  ref.watch(coordinadoresRecintoProvider);
+                              return recintosAsync2.when(
+                                loading: () =>
+                                    const LinearProgressIndicator(),
+                                error: (e, _) => Text('Error: $e'),
+                                data: (coordinadores) {
+                                  final recintosOcupados = coordinadores
+                                      .where((c) =>
+                                          !c.debeCambiarPassword &&
+                                          c.recintoId != null)
+                                      .map((c) => c.recintoId!)
+                                      .toSet();
+                                  final recintosDisponibles = recintos
+                                      .where((r) =>
+                                          !recintosOcupados.contains(r.id))
+                                      .toList();
+                                  return DropdownButtonFormField<int>(
+                                    value: recintoIdSeleccionado,
+                                    hint: const Text('Seleccione un recinto...',
+                                        style: TextStyle(fontSize: 13)),
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 12),
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                              color: _Tema.outline)),
+                                      enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                              color: _Tema.outline)),
+                                    ),
+                                    items: recintosDisponibles
+                                        .map((r) => DropdownMenuItem(
+                                            value: r.id,
+                                            child: Text(r.nombre,
+                                                style: const TextStyle(
+                                                    fontSize: 13))))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setS(() => recintoIdSeleccionado = v),
+                                    validator: (v) => v == null
+                                        ? 'Por favor asigne un recinto'
+                                        : null,
+                                  );
+                                },
+                              );
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                              color: _Tema.brandAccent,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: _Tema.primary.withOpacity(0.1))),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.lock_outline,
-                                  size: 18, color: _Tema.primary),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Al hacer clic en \'Guardar y Asignar\', se enviará una invitación de acceso seguro al correo proporcionado y se registrará la vinculación en el sistema institucional.',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: _Tema.primary,
-                                      height: 1.4),
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: _Tema.brandAccent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color:
+                                        _Tema.primary.withOpacity(0.1))),
+                            child: const Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.lock_outline,
+                                      size: 18, color: _Tema.primary),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Se enviará una invitación al correo proporcionado con las credenciales de acceso.',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: _Tema.primary,
+                                          height: 1.4),
+                                    ),
+                                  ),
+                                ]),
                           ),
-                        ),
-                      ],
-                    ),
+                        ]),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -529,17 +602,13 @@ class _CoordinadorProvincialPanelScreenState
                       ref.invalidate(coordinadoresRecintoProvider);
                       if (ctx.mounted) {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text(
-                                'Coordinador creado e invitado exitosamente'),
-                            backgroundColor: _Tema.success));
+                        _mostrarExitoDialog(
+                          context,
+                          'Coordinador creado exitosamente. Se envió la invitación al correo registrado.',
+                        );
                       }
                     } catch (e) {
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                            content: Text('Error: $e'),
-                            backgroundColor: _Tema.errorColor));
-                      }
+                      if (ctx.mounted) _mostrarErrorDialog(ctx, 'Error: $e');
                     }
                   },
                   child: const Row(
@@ -548,7 +617,7 @@ class _CoordinadorProvincialPanelScreenState
                         Icon(Icons.assignment_ind_outlined, size: 18),
                         SizedBox(width: 8),
                         Text('Guardar y Asignar',
-                            style: TextStyle(fontWeight: FontWeight.bold))
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ]),
                 ),
                 const SizedBox(height: 8),
@@ -572,9 +641,9 @@ class _CoordinadorProvincialPanelScreenState
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TAB 1 — GESTIÓN DE RECINTOS (Inspirado en screen3.png)
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// TAB RECINTOS
+// ═══════════════════════════════════════════════════════════════
 class _TabRecintos extends ConsumerWidget {
   final VoidCallback onCrear;
   final VoidCallback onCrearCoordinador;
@@ -619,16 +688,13 @@ class _TabRecintos extends ConsumerWidget {
                   onPressed: onCrear,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Nuevo Recinto',
-                      style:
-                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Tarjetas KPI de Resumen Global (ahora con progreso REAL calculado
-          // a partir de las actas ingresadas vs. el total posible: mesas * 2)
           recintosAsync.when(
             loading: () => const SizedBox(),
             error: (_, __) => const SizedBox(),
@@ -703,14 +769,12 @@ class _TabRecintos extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 16),
-
           const Text('Recintos Registrados',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: _Tema.onSurfaceVariant)),
           const SizedBox(height: 8),
-
           recintosAsync.when(
             loading: () => const Center(
                 child: Padding(
@@ -725,7 +789,6 @@ class _TabRecintos extends ConsumerWidget {
                     icono: Icons.location_city_outlined,
                     mensaje: 'Sin recintos',
                     sub: 'Crea el primero usando el botón superior.',
-                    boton: 'Crear recinto',
                     onTap: onCrear);
               }
               return ListView.builder(
@@ -743,64 +806,9 @@ class _TabRecintos extends ConsumerWidget {
   }
 }
 
-class _CardKPI extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final double? progress;
-
-  const _CardKPI(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(_Tema.cardRadius),
-          border: Border.all(color: _Tema.outline)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: _Tema.primary),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: _Tema.greyLight,
-                      letterSpacing: 0.5)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: _Tema.onSurface)),
-          if (progress != null) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 6,
-                  backgroundColor: _Tema.background,
-                  color: _Tema.primary),
-            ),
-          ]
-        ],
-      ),
-    );
-  }
-}
-
+// ═══════════════════════════════════════════════════════════════
+// TARJETA RECINTO MODERNO
+// ═══════════════════════════════════════════════════════════════
 class _TarjetaRecintoModerno extends ConsumerWidget {
   final Recinto recinto;
   const _TarjetaRecintoModerno({required this.recinto});
@@ -850,7 +858,7 @@ class _TarjetaRecintoModerno extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        r.porcentaje == 1.0 ? 'ACTIVO' : 'PENDIENTE',
+                        r.porcentaje == 1.0 ? 'COMPLETO' : 'PENDIENTE',
                         style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -933,9 +941,9 @@ class _IconInfoRow extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TAB 2 — DASHBOARD DE VOTOS CONSOLIDADOS (Inspirado en screen4.png)
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// TAB DASHBOARD
+// ═══════════════════════════════════════════════════════════════
 class _TabDashboard extends ConsumerWidget {
   final String filtroDigidad;
   final String? filtroRecinto;
@@ -960,7 +968,6 @@ class _TabDashboard extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Selectores Superiores de Filtro
           Row(
             children: [
               Expanded(
@@ -979,7 +986,6 @@ class _TabDashboard extends ConsumerWidget {
           _SelectorDignidad(
               valor: filtroDigidad, onChanged: onFiltroDigidadChanged),
           const SizedBox(height: 16),
-
           votosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
@@ -1013,14 +1019,11 @@ class _TabDashboard extends ConsumerWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // KPI de control principal
                   _CardKPI(
                       label: 'TOTAL VOTOS ESCRUTADOS',
                       value: '$totalVotos',
                       icon: Icons.trending_up_outlined),
                   const SizedBox(height: 20),
-
-                  // Caja Contenedora de Resultados Consolidados (Estilo screen4.png)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1106,8 +1109,8 @@ class _FilaCandidatoModerno extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: _Tema.onSurface)),
                     Text(datos.organizacion,
-                        style: const TextStyle(
-                            fontSize: 11, color: _Tema.greyLight)),
+                        style:
+                            const TextStyle(fontSize: 11, color: _Tema.greyLight)),
                   ],
                 ),
               ),
@@ -1141,7 +1144,6 @@ class _FilaCandidatoModerno extends StatelessWidget {
   }
 }
 
-// ── Selector de Recinto (Estilo limpio) ──────────────────────────────────────
 class _SelectorRecinto extends StatelessWidget {
   final List<Recinto> recintos;
   final String? seleccionado;
@@ -1168,8 +1170,8 @@ class _SelectorRecinto extends StatelessWidget {
           items: [
             const DropdownMenuItem<String?>(
                 value: null,
-                child:
-                    Text('Todos los recintos', style: TextStyle(fontSize: 13))),
+                child: Text('Todos los recintos',
+                    style: TextStyle(fontSize: 13))),
             ...recintos.map((r) => DropdownMenuItem<String?>(
                 value: r.nombre,
                 child: Text(r.nombre, style: const TextStyle(fontSize: 13)))),
@@ -1210,7 +1212,9 @@ class _SelectorDignidad extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isSel ? Colors.white : _Tema.onSurfaceVariant)),
+                        color: isSel
+                            ? Colors.white
+                            : _Tema.onSurfaceVariant)),
               ),
             ),
           );
@@ -1220,9 +1224,9 @@ class _SelectorDignidad extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TAB 3 — COORDINADORES DE RECINTO
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// TAB COORDINADORES
+// ═══════════════════════════════════════════════════════════════
 class _TabCoordinadores extends ConsumerWidget {
   const _TabCoordinadores();
 
@@ -1250,58 +1254,89 @@ class _TabCoordinadores extends ConsumerWidget {
             itemCount: coords.length,
             itemBuilder: (_, i) {
               final c = coords[i];
+              final aceptado = !c.debeCambiarPassword;
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(_Tema.cardRadius),
-                    border: Border.all(color: _Tema.outline)),
+                    border: Border.all(
+                        color: aceptado
+                            ? _Tema.outline
+                            : _Tema.warningColor.withOpacity(0.4))),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: _Tema.brandAccent,
-                      child: Text(
-                          c.nombres.isNotEmpty
-                              ? c.nombres[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              color: _Tema.primary,
-                              fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                          color: aceptado
+                              ? _Tema.successContainer
+                              : _Tema.warningContainer,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Icon(
+                        aceptado
+                            ? Icons.verified_user_outlined
+                            : Icons.person_outline,
+                        size: 20,
+                        color:
+                            aceptado ? _Tema.success : _Tema.warningColor,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${c.nombres} ${c.apellidos}',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: _Tema.onSurface)),
-                          const SizedBox(height: 2),
-                          Text('C.C: ${c.cedula}',
-                              style: const TextStyle(
-                                  fontSize: 11, color: _Tema.onSurfaceVariant)),
-                          Text(c.correo,
-                              style: const TextStyle(
-                                  fontSize: 11, color: _Tema.greyLight)),
-                        ],
-                      ),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${c.nombres} ${c.apellidos}',
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: _Tema.onSurface)),
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              const Icon(Icons.location_on_outlined,
+                                  size: 12, color: _Tema.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                    c.recintoId != null
+                                        ? 'Recinto #${c.recintoId}'
+                                        : 'Sin recinto asignado',
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: _Tema.onSurfaceVariant),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ]),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                  color: aceptado
+                                      ? _Tema.successContainer
+                                      : _Tema.warningContainer,
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: Text(
+                                aceptado ? 'Solicitud aceptada' : 'Pendiente',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: aceptado
+                                        ? _Tema.success
+                                        : _Tema.warningColor),
+                              ),
+                            ),
+                          ]),
                     ),
-                    if (c.recintoId != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: _Tema.brandAccent,
-                            borderRadius: BorderRadius.circular(4)),
-                        child: Text('ID Recinto: ${c.recintoId}',
-                            style: const TextStyle(
-                                fontSize: 10,
-                                color: _Tema.primary,
-                                fontWeight: FontWeight.bold)),
+                    if (!aceptado)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: _Tema.errorColor, size: 20),
+                        tooltip: 'Eliminar coordinador pendiente',
+                        onPressed: () => _confirmarEliminar(context, ref,
+                            c.id, '${c.nombres} ${c.apellidos}'),
                       ),
                   ],
                 ),
@@ -1312,9 +1347,62 @@ class _TabCoordinadores extends ConsumerWidget {
       ),
     );
   }
+
+  void _confirmarEliminar(BuildContext context, WidgetRef ref, String userId,
+      String nombre) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_Tema.cardRadius)),
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: _Tema.warningColor),
+          SizedBox(width: 8),
+          Text('Eliminar coordinador',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ]),
+        content: Text(
+          '¿Deseas eliminar a $nombre? Su solicitud aún está pendiente.',
+          style: const TextStyle(fontSize: 13, color: _Tema.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: _Tema.errorColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8))),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(eliminarCoordinadorProvider)(userId);
+                ref.invalidate(coordinadoresRecintoProvider);
+                if (context.mounted) {
+                  _mostrarExitoDialog(
+                      context, 'Coordinador eliminado correctamente.');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  _mostrarErrorDialog(context, 'Error al eliminar: $e');
+                }
+              }
+            },
+            child: const Text('Eliminar',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ── Detalle de un Recinto Específico (Estilo screen2.png) ─────────────────────
+// ═══════════════════════════════════════════════════════════════
+// DETALLE DE RECINTO
+// ═══════════════════════════════════════════════════════════════
 class _DetalleRecintoScreen extends ConsumerWidget {
   final Recinto recinto;
   const _DetalleRecintoScreen({required this.recinto});
@@ -1330,7 +1418,8 @@ class _DetalleRecintoScreen extends ConsumerWidget {
         foregroundColor: _Tema.primary,
         elevation: 0,
         title: Text(recinto.nombre,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            style:
+                const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
       ),
       body: actasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -1403,10 +1492,12 @@ class _TarjetaActaDetalle extends StatelessWidget {
                   const Icon(Icons.verified_user_outlined,
                       size: 14, color: _Tema.success),
                   const SizedBox(width: 6),
-                  Text(
-                      'Ubicación validada geo-redundante (${acta.gpsLat!.toStringAsFixed(4)}, ${acta.gpsLng!.toStringAsFixed(4)})',
-                      style:
-                          const TextStyle(fontSize: 11, color: _Tema.success)),
+                  Expanded(
+                    child: Text(
+                        'Ubicación validada (${acta.gpsLat!.toStringAsFixed(4)}, ${acta.gpsLng!.toStringAsFixed(4)})',
+                        style:
+                            const TextStyle(fontSize: 11, color: _Tema.success)),
+                  ),
                 ],
               ),
             )
@@ -1420,10 +1511,10 @@ class _TarjetaActaDetalle extends StatelessWidget {
                 children: [
                   Icon(Icons.location_off_outlined,
                       size: 14, color: _Tema.warningColor),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Text('Coordenadas GPS no capturadas',
-                      style:
-                          TextStyle(fontSize: 11, color: _Tema.warningColor)),
+                      style: TextStyle(
+                          fontSize: 11, color: _Tema.warningColor)),
                 ],
               ),
             ),
@@ -1459,22 +1550,82 @@ class _BadgeEstado extends StatelessWidget {
       );
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// WIDGETS AUXILIARES E INFRAESTRUCTURA DE ESTILO (screen.png)
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// WIDGETS REUTILIZABLES
+// ═══════════════════════════════════════════════════════════════
+class _CardKPI extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final double? progress;
+  final Color? valueColor;
+
+  const _CardKPI({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.progress,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(_Tema.cardRadius),
+          border: Border.all(color: _Tema.outline)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: _Tema.primary),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _Tema.greyLight,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: valueColor ?? _Tema.onSurface)),
+          if (progress != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: _Tema.background,
+                  color: _Tema.primary),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
   final IconData icono;
   final String mensaje;
   final String sub;
-  final String? boton;
   final VoidCallback? onTap;
 
-  const _EmptyState(
-      {required this.icono,
-      required this.mensaje,
-      required this.sub,
-      this.boton,
-      this.onTap});
+  const _EmptyState({
+    required this.icono,
+    required this.mensaje,
+    required this.sub,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1482,6 +1633,7 @@ class _EmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icono, size: 48, color: _Tema.greyLight),
             const SizedBox(height: 12),
@@ -1490,9 +1642,22 @@ class _EmptyState extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: _Tema.onSurface)),
+            const SizedBox(height: 4),
             Text(sub,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: _Tema.greyLight)),
+                style:
+                    const TextStyle(fontSize: 12, color: _Tema.greyLight)),
+            if (onTap != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: onTap,
+                style: FilledButton.styleFrom(
+                    backgroundColor: _Tema.primary,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8))),
+                child: const Text('Crear recinto'),
+              ),
+            ]
           ],
         ),
       ),
@@ -1506,10 +1671,10 @@ class _CampoForm extends StatelessWidget {
   final IconData icono;
   final String hint;
   final bool digitsOnly;
-  final int? maxLength;
   final bool required;
-  final String? Function(String?)? validator;
+  final int? maxLength;
   final TextInputType? keyboard;
+  final String? Function(String?)? validator;
 
   const _CampoForm({
     required this.ctrl,
@@ -1517,62 +1682,69 @@ class _CampoForm extends StatelessWidget {
     required this.icono,
     required this.hint,
     this.digitsOnly = false,
-    this.maxLength,
     this.required = true,
-    this.validator,
+    this.maxLength,
     this.keyboard,
+    this.validator,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icono, size: 14, color: _Tema.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _Tema.onSurfaceVariant)),
-          ],
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icono, size: 14, color: _Tema.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _Tema.onSurfaceVariant)),
+        if (required) ...[
+          const SizedBox(width: 4),
+          const Text('*',
+              style: TextStyle(
+                  color: _Tema.errorColor, fontWeight: FontWeight.bold)),
+        ],
+      ]),
+      const SizedBox(height: 6),
+      TextFormField(
+        controller: ctrl,
+        keyboardType:
+            keyboard ?? (digitsOnly ? TextInputType.number : TextInputType.text),
+        inputFormatters: [
+          if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
+          if (maxLength != null)
+            LengthLimitingTextInputFormatter(maxLength),
+        ],
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle:
+              const TextStyle(fontSize: 13, color: _Tema.greyLight),
+          filled: true,
+          fillColor: Colors.white,
+          counterText: '',
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _Tema.outline)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _Tema.outline)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _Tema.primary)),
+          errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _Tema.errorColor)),
         ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: ctrl,
-          keyboardType: keyboard ??
-              (digitsOnly ? TextInputType.number : TextInputType.text),
-          inputFormatters: [
-            if (digitsOnly) FilteringTextInputFormatter.digitsOnly,
-            if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
-          ],
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: _Tema.greyLight, fontSize: 13),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.outline)),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.outline)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: _Tema.primary, width: 1.5)),
-          ),
-          validator: validator ??
-              (required
-                  ? (v) => (v == null || v.trim().isEmpty)
-                      ? 'Este campo es obligatorio'
-                      : null
-                  : null),
-        ),
-      ],
-    );
+        validator: validator ??
+            (required
+                ? (v) => (v == null || v.trim().isEmpty)
+                    ? 'Este campo es obligatorio'
+                    : null
+                : null),
+      ),
+    ]);
   }
 }

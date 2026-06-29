@@ -41,11 +41,13 @@ class VeedorConMesa {
   final Usuario usuario;
   final int? mesaId;
   final int? numeroMesa;
+  final bool reasignado;
 
   const VeedorConMesa({
     required this.usuario,
     this.mesaId,
     this.numeroMesa,
+    this.reasignado = false,
   });
 
   /// Disponible = no tiene ninguna mesa asignada actualmente.
@@ -207,5 +209,14 @@ final liberarVeedorProvider =
     await supabase
         .from('veedor_mesas')
         .update({'mesa_id': null}).eq('usuario_id', usuarioId);
+  };
+});
+
+// ─── Eliminar veedor del recinto ─────────────────────────────────────────────
+final eliminarVeedorProvider =
+    Provider<Future<void> Function(String usuarioId)>((ref) {
+  return (usuarioId) async {
+    final supabase = ref.read(supabaseClientProvider);
+    await supabase.from('veedor_mesas').delete().eq('usuario_id', usuarioId);
   };
 });

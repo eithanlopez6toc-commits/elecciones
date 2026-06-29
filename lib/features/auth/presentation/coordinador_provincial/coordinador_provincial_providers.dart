@@ -342,3 +342,15 @@ final actasGlobalCountProvider = FutureProvider<int>((ref) async {
   final res = await supabase.from(SupabaseConstants.actasTable).select('id');
   return (res as List).length;
 });
+// Agregar al final de coordinador_provincial_providers.dart
+
+final eliminarCoordinadorProvider =
+    Provider<Future<void> Function(String userId)>((ref) {
+  return (userId) async {
+    final supabase = ref.read(supabaseClientProvider);
+    // Eliminar de la tabla usuarios
+    await supabase.from('usuarios').delete().eq('id', userId);
+    // Eliminar de auth.users via Edge Function
+    await supabase.functions.invoke('eliminar-usuario', body: {'user_id': userId});
+  };
+});

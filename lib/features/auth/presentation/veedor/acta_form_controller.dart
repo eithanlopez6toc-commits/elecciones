@@ -1,12 +1,9 @@
 // lib/features/auth/presentation/veedor/acta_form_controller.dart
 //
-// CAMBIOS vs versión anterior:
-//  - GPS se captura SOLO al tomar foto (no hay botón manual en UI)
-//  - Si permiso GPS denegado → error bloqueante, no permite continuar
-//  - GPS se almacena como campo del acta (no como metadato de imagen)
-//  - Persistencia offline: las actas se guardan primero en SQLite local
-//    y se sincronizan cuando hay conexión (cola de pendientes)
-//  - Vista previa del acta lista para mostrar en pantalla
+// CAMBIOS en esta versión:
+//  - esConsistente ahora exige el total EXACTO de sufragantes (==), no <=
+//  - El GPS existente de un acta ya guardada se carga en el estado inicial
+//    y nunca se sobreescribe con null al actualizar sin tomar nueva foto
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -72,9 +69,10 @@ class ActaFormState {
       votosNulos +
       votosBlancos;
 
-  bool get esConsistente => totalContabilizado <= totalSufragantes;
+  /// El total debe coincidir EXACTAMENTE con los sufragantes de la mesa.
+  bool get esConsistente => totalContabilizado == totalSufragantes;
 
-  /// Se puede guardar si: hay GPS, los votos son consistentes y no está ya guardando
+  /// Se puede guardar si: hay GPS, los votos son consistentes (exactos) y no está ya guardando
   bool get puedeGuardar =>
       gpsLat != null && gpsLng != null && esConsistente && !guardando;
 
@@ -152,8 +150,6 @@ class _OfflineActaService {
     return _db!;
   }
 
-  /// Guarda el acta en la base local mientras no hay conexión.
-  /// Retorna el id local del registro.
   static Future<int> encolar({
     required int mesaId,
     required String? usuarioId,
@@ -184,20 +180,17 @@ class _OfflineActaService {
     });
   }
 
-  /// Retorna todos los registros pendientes de sincronizar.
   static Future<List<Map<String, dynamic>>> pendientes() async {
     final database = await db;
     return database.query('actas_pendientes', orderBy: 'id ASC');
   }
 
-  /// Elimina un registro ya sincronizado.
   static Future<void> eliminar(int localId) async {
     final database = await db;
     await database
         .delete('actas_pendientes', where: 'id = ?', whereArgs: [localId]);
   }
 
-  /// Incrementa el contador de intentos fallidos.
   static Future<void> marcarIntento(int localId) async {
     final database = await db;
     await database.rawUpdate(
@@ -225,12 +218,10 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
 
   ActaFormNotifier(this._ref, ActaFormState initialState) : super(initialState);
 
-  // ── Spinner de procesando foto ────────────────────────────────────────────
   void setProcesandoFoto(bool value) {
     state = state.copyWith(procesandoFoto: value);
   }
 
-  // ── Votos ─────────────────────────────────────────────────────────────────
   void actualizarVotosOrganizacion(int orgId, int votos) {
     final mapa = Map<int, int>.from(state.votosPorOrganizacion);
     mapa[orgId] = votos < 0 ? 0 : votos;
@@ -243,9 +234,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
   void actualizarVotosBlancos(int valor) =>
       state = state.copyWith(votosBlancos: valor < 0 ? 0 : valor, error: null);
 
-  // ── GPS: solo se llama internamente desde procesarFotoDesdeCamera ─────────
-  // NO expuesto en la UI como botón.
-  // Retorna las coordenadas o null si falla (sin lanzar excepción).
   Future<({double lat, double lng})?> _capturarCoordenadas() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
@@ -269,8 +257,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     }
   }
 
-  /// Verifica si el permiso GPS está disponible ANTES de abrir la cámara.
-  /// Retorna true si puede continuar, false si debe bloquear.
   Future<bool> verificarPermisoGps() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       state = state.copyWith(
@@ -297,11 +283,7 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     return true;
   }
 
-  // ── Foto + GPS simultáneos ────────────────────────────────────────────────
-  // Las coordenadas se capturan en el momento exacto de tomar la foto
-  // y se almacenan como campo del acta (no como metadato EXIF).
   Future<void> procesarFotoDesdeCamera(XFile xfile) async {
-    // Muestra spinner inmediatamente para que la UI responda rápido
     state = state.copyWith(procesandoFoto: true, error: null);
 
     try {
@@ -314,18 +296,17 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
       final coords = resultados[1] as ({double lat, double lng})?;
 
       if (archivoFoto == null) {
-        // El error ya fue seteado dentro de _procesarImagen
         state = state.copyWith(procesandoFoto: false);
         return;
       }
 
       state = state.copyWith(
         fotoFile: archivoFoto,
+        // Si la nueva captura trae GPS, lo reemplaza. Si no, conserva el que
+        // ya hubiera en el estado (por ejemplo, el cargado desde el acta existente).
         gpsLat: coords?.lat ?? state.gpsLat,
         gpsLng: coords?.lng ?? state.gpsLng,
         procesandoFoto: false,
-        // Si no se obtuvo GPS en este intento pero ya había uno previo, lo conserva.
-        // Si no hay GPS en absoluto, alerta pero NO bloquea (se puede reintentar guardando).
         error: (coords == null && state.gpsLat == null)
             ? 'No se pudo obtener la ubicación GPS. '
                 'Asegúrate de tener señal y vuelve a tomar la foto.'
@@ -339,7 +320,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     }
   }
 
-  // Procesa y comprime la imagen; retorna File o null si falla.
   Future<File?> _procesarImagen(XFile xfile) async {
     try {
       final bytes = await xfile.readAsBytes();
@@ -402,7 +382,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     return (totalVariance / count) > 150.0;
   }
 
-  // ── Guardar (online first, offline fallback) ──────────────────────────────
   Future<void> guardarActa({
     required String userId,
     String? urlFotoExistente,
@@ -414,9 +393,11 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
               'Se requiere la ubicación GPS. Toma la foto del acta para capturarla automáticamente.',
         );
       } else if (!state.esConsistente) {
+        final diff = state.totalSufragantes - state.totalContabilizado;
         state = state.copyWith(
-          error:
-              'Los votos (${state.totalContabilizado}) superan el total de sufragantes (${state.totalSufragantes}).',
+          error: diff > 0
+              ? 'Faltan $diff votos para llegar al total de sufragantes (${state.totalSufragantes}).'
+              : 'Los votos (${state.totalContabilizado}) superan el total de sufragantes (${state.totalSufragantes}) por ${-diff}.',
         );
       }
       return;
@@ -430,23 +411,17 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     state = state.copyWith(guardando: true, error: null);
 
     try {
-      // Verificar conectividad
       final connectivity = await Connectivity().checkConnectivity();
       final hayConexion = !connectivity.contains(ConnectivityResult.none);
 
       if (!hayConexion) {
-        // ── Modo OFFLINE: guardar localmente ──────────────────────────────
         await _guardarOffline(userId: userId);
         return;
       }
 
-      // ── Modo ONLINE: subir normalmente ────────────────────────────────────
       await _guardarOnline(userId: userId, urlFotoExistente: urlFotoExistente);
-
-      // Aprovechar para sincronizar pendientes en segundo plano
       _sincronizarPendientes(userId: userId);
     } catch (e) {
-      // Si falla la subida, intentar guardar offline
       try {
         await _guardarOffline(userId: userId);
       } catch (e2) {
@@ -495,8 +470,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
       fotoUrl = urlFotoExistente ?? '';
     }
 
-    // Las coordenadas GPS se almacenan como campos del acta,
-    // no como metadatos de la imagen.
     final acta = Acta(
       id: state.actaId ?? 0,
       mesaId: state.mesaId,
@@ -508,8 +481,11 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
       votosBlancos: state.votosBlancos,
       totalSufragantes: state.totalSufragantes,
       urlFotoActa: fotoUrl,
-      gpsLat: state.gpsLat, // ← campo del acta, no EXIF
-      gpsLng: state.gpsLng, // ← campo del acta, no EXIF
+      // state.gpsLat/gpsLng ya vienen garantizados (puedeGuardar los exige),
+      // y además el estado inicial del provider los precarga desde el acta
+      // existente, por lo que nunca se sobreescriben con null.
+      gpsLat: state.gpsLat,
+      gpsLng: state.gpsLng,
       estado: EstadoActa.ingresada,
       createdAt: DateTime.now(),
     );
@@ -522,10 +498,6 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
     );
   }
 
-  // ── Sincronización en segundo plano ──────────────────────────────────────
-  // Se ejecuta cuando el dispositivo recupera conexión.
-  // Considera conflictos: si el servidor ya tiene un acta para esa mesa
-  // con el mismo usuario, se actualiza en lugar de duplicar.
   Future<void> _sincronizarPendientes({required String userId}) async {
     final pendientes = await _OfflineActaService.pendientes();
     if (pendientes.isEmpty) return;
@@ -564,21 +536,14 @@ class ActaFormNotifier extends StateNotifier<ActaFormState> {
           createdAt: DateTime.parse(row['created_at'] as String),
         );
 
-        // Verificar si ya existe en el servidor (conflicto de doble envío).
-        // La lógica de conflicto: si el repo.guardarActa lanza un error
-        // de duplicado, lo ignoramos y eliminamos el pendiente igualmente.
         await repo.guardarActa(acta);
         await _OfflineActaService.eliminar(localId);
       } catch (_) {
-        // Marca el intento fallido; se reintentará la próxima vez.
         await _OfflineActaService.marcarIntento(localId);
-        // Si hay más de 5 intentos fallidos, dejar en cola pero no bloquear.
       }
     }
   }
 
-  /// Llama esto desde la pantalla cuando detectes que recuperó conexión
-  /// (puedes usar connectivity_plus stream en el widget).
   Future<void> sincronizarSiHayConexion({required String userId}) async {
     final connectivity = await Connectivity().checkConnectivity();
     if (!connectivity.contains(ConnectivityResult.none)) {
@@ -639,6 +604,9 @@ final actaFormProvider =
       votosNulos: args.actaExistente?.votosNulos ?? 0,
       votosBlancos: args.actaExistente?.votosBlancos ?? 0,
       actaId: args.actaExistente?.id,
+      // ★ FIX: precargar el GPS ya existente para que no se pierda al actualizar.
+      gpsLat: args.actaExistente?.gpsLat,
+      gpsLng: args.actaExistente?.gpsLng,
     ),
   );
 });

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/usuario.dart';
+import '../../data/models/usuario_model.dart';
 import '../../providers/auth_providers.dart';
 import '../../data/datasources/supabase_client_provider.dart';
 
@@ -9,21 +10,37 @@ class UsuarioNotifier extends StateNotifier<Usuario?> {
     _restoreFromSession();
   }
 
-  void _restoreFromSession() {
+  Future<void> _restoreFromSession() async {
     final session = Supabase.instance.client.auth.currentSession;
     if (session == null) return;
-    final meta = session.user.userMetadata;
-    state = Usuario(
-      id: session.user.id,
-      cedula: meta?['cedula'] as String? ?? '',
-      nombres: meta?['nombres'] as String? ?? '',
-      apellidos: meta?['apellidos'] as String? ?? '',
-      telefono: meta?['telefono'] as String? ?? '',
-      correo: session.user.email ?? '',
-      rol: _rolFromMetadata(meta?['rol'] as String?),
-      debeCambiarPassword: meta?['debe_cambiar_password'] as bool? ?? false,
-      recintoId: meta?['recinto_id'] as int?,
-    );
+
+    try {
+      final data = await Supabase.instance.client
+          .from('usuarios')
+          .select()
+          .eq('id', session.user.id)
+          .single();
+
+      state = UsuarioModel.fromMap(
+        data,
+        correo: session.user.email ?? '',
+      );
+    } catch (e) {
+      // Si falla la consulta (sin internet, etc.), se intenta un fallback
+      // mínimo con los metadatos de auth para no dejar al usuario sin sesión.
+      final meta = session.user.userMetadata;
+      state = Usuario(
+        id: session.user.id,
+        cedula: meta?['cedula'] as String? ?? '',
+        nombres: meta?['nombres'] as String? ?? '',
+        apellidos: meta?['apellidos'] as String? ?? '',
+        telefono: meta?['telefono'] as String? ?? '',
+        correo: session.user.email ?? '',
+        rol: _rolFromMetadata(meta?['rol'] as String?),
+        debeCambiarPassword: meta?['debe_cambiar_password'] as bool? ?? false,
+        recintoId: meta?['recinto_id'] as int?,
+      );
+    }
   }
 
   RolUsuario _rolFromMetadata(String? rol) {
